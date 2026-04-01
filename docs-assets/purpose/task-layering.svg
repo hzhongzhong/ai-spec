@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="980" viewBox="0 0 1500 980">
+<rect width="1500" height="980" fill="#0f172a"/>
+<text x="750" y="56" text-anchor="middle" font-size="30" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#f8fafc" font-weight="700">Task 分层与层内执行模型</text>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#94a3b8"/>
+  </marker>
+</defs>
+<g font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif">
+  <rect x="80" y="110" width="1340" height="150" rx="22" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="140" y="150" font-size="24" fill="#93c5fd" font-weight="700">七层顺序（跨层串行）</text>
+  <rect x="120" y="180" width="140" height="42" rx="14" fill="#1d4ed8" stroke="#60a5fa"/><text x="190" y="207" text-anchor="middle" font-size="20" fill="#eff6ff">data</text>
+  <rect x="310" y="180" width="140" height="42" rx="14" fill="#0369a1" stroke="#38bdf8"/><text x="380" y="207" text-anchor="middle" font-size="20" fill="#e0f2fe">infra</text>
+  <rect x="500" y="180" width="160" height="42" rx="14" fill="#0f766e" stroke="#2dd4bf"/><text x="580" y="207" text-anchor="middle" font-size="20" fill="#ecfeff">service</text>
+  <rect x="710" y="180" width="140" height="42" rx="14" fill="#15803d" stroke="#4ade80"/><text x="780" y="207" text-anchor="middle" font-size="20" fill="#f0fdf4">api</text>
+  <rect x="900" y="180" width="150" height="42" rx="14" fill="#7c3aed" stroke="#c084fc"/><text x="975" y="207" text-anchor="middle" font-size="20" fill="#f5f3ff">view</text>
+  <rect x="1100" y="180" width="150" height="42" rx="14" fill="#c2410c" stroke="#fb923c"/><text x="1175" y="207" text-anchor="middle" font-size="20" fill="#fff7ed">route</text>
+  <rect x="1300" y="180" width="90" height="42" rx="14" fill="#be123c" stroke="#fb7185"/><text x="1345" y="207" text-anchor="middle" font-size="20" fill="#fff1f2">test</text>
+  <line x1="260" y1="201" x2="310" y2="201" stroke="#94a3b8" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="450" y1="201" x2="500" y2="201" stroke="#94a3b8" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="660" y1="201" x2="710" y2="201" stroke="#94a3b8" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="850" y1="201" x2="900" y2="201" stroke="#94a3b8" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="1050" y1="201" x2="1100" y2="201" stroke="#94a3b8" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="1250" y1="201" x2="1300" y2="201" stroke="#94a3b8" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect x="80" y="320" width="760" height="540" rx="22" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="120" y="360" font-size="24" fill="#a7f3d0" font-weight="700">单层内部执行（以 api 层为例）</text>
+  <rect x="140" y="395" width="640" height="60" rx="16" fill="#334155" stroke="#64748b"/>
+  <text x="460" y="432" text-anchor="middle" font-size="22" fill="#f8fafc">拓扑排序：按 dependencies 字段分 batch</text>
+
+  <rect x="140" y="500" width="290" height="220" rx="18" fill="#052e16" stroke="#22c55e"/>
+  <text x="285" y="537" text-anchor="middle" font-size="24" fill="#dcfce7" font-weight="700">Batch 1</text>
+  <text x="285" y="565" text-anchor="middle" font-size="16" fill="#bbf7d0">无依赖 → 可并行</text>
+  <rect x="185" y="590" width="200" height="42" rx="12" fill="#166534" stroke="#4ade80"/>
+  <text x="285" y="617" text-anchor="middle" font-size="18" fill="#f0fdf4">userController.ts</text>
+  <rect x="185" y="648" width="200" height="42" rx="12" fill="#166534" stroke="#4ade80"/>
+  <text x="285" y="675" text-anchor="middle" font-size="18" fill="#f0fdf4">authController.ts</text>
+  <text x="285" y="705" text-anchor="middle" font-size="15" fill="#bbf7d0">完成后立即更新 generatedFileCache</text>
+
+  <rect x="490" y="500" width="290" height="220" rx="18" fill="#3f2a62" stroke="#c084fc"/>
+  <text x="635" y="537" text-anchor="middle" font-size="24" fill="#faf5ff" font-weight="700">Batch 2</text>
+  <text x="635" y="565" text-anchor="middle" font-size="16" fill="#e9d5ff">依赖 Batch 1 → 可并行</text>
+  <rect x="535" y="605" width="200" height="60" rx="12" fill="#6d28d9" stroke="#c084fc"/>
+  <text x="635" y="632" text-anchor="middle" font-size="18" fill="#f5f3ff">adminController.ts</text>
+  <text x="635" y="654" text-anchor="middle" font-size="14" fill="#ede9fe">需要 import userController</text>
+  <text x="635" y="705" text-anchor="middle" font-size="15" fill="#e9d5ff">完成后再次更新 generatedFileCache</text>
+
+  <line x1="460" y1="455" x2="285" y2="500" stroke="#94a3b8" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="430" y1="610" x2="490" y2="610" stroke="#94a3b8" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="460" y="592" text-anchor="middle" font-size="15" fill="#cbd5e1">Batch 1 完成</text>
+
+  <rect x="900" y="320" width="520" height="540" rx="22" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="940" y="360" font-size="24" fill="#fde68a" font-weight="700">共享状态与层完成动作</text>
+
+  <rect x="960" y="400" width="400" height="150" rx="18" fill="#1e293b" stroke="#64748b"/>
+  <text x="1160" y="438" text-anchor="middle" font-size="24" fill="#f8fafc" font-weight="700">generatedFileCache</text>
+  <text x="1160" y="475" text-anchor="middle" font-size="18" fill="#cbd5e1">函数签名</text>
+  <text x="1160" y="505" text-anchor="middle" font-size="18" fill="#cbd5e1">文件路径</text>
+  <text x="1160" y="535" text-anchor="middle" font-size="18" fill="#cbd5e1">behavioral contracts</text>
+
+  <line x1="780" y1="610" x2="960" y2="475" stroke="#94a3b8" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="960" y1="505" x2="780" y2="680" stroke="#94a3b8" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="870" y="525" text-anchor="middle" font-size="15" fill="#cbd5e1">批次读写</text>
+
+  <rect x="960" y="620" width="400" height="170" rx="18" fill="#78350f" stroke="#f59e0b"/>
+  <text x="1160" y="657" text-anchor="middle" font-size="24" fill="#fffbeb" font-weight="700">整层执行关系</text>
+  <text x="1160" y="695" text-anchor="middle" font-size="18" fill="#fde68a">进入当前层</text>
+  <text x="1160" y="725" text-anchor="middle" font-size="18" fill="#fde68a">↓</text>
+  <text x="1160" y="755" text-anchor="middle" font-size="18" fill="#fde68a">层内拓扑排序 + batch 并行</text>
+  <text x="1160" y="785" text-anchor="middle" font-size="18" fill="#fde68a">↓</text>
+  <text x="1160" y="815" text-anchor="middle" font-size="18" fill="#fde68a">统一更新共享 config 文件（如 routes/index.ts）</text>
+  <text x="1160" y="845" text-anchor="middle" font-size="18" fill="#fde68a">↓ 进入下一层</text>
+</g>
+</svg>

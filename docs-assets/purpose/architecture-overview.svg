@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="980" viewBox="0 0 1400 980">
+<rect width="1400" height="980" fill="#0f172a"/>
+<text x="700" y="54" text-anchor="middle" font-size="30" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#f8fafc" font-weight="700">ai-spec 整体架构鸟瞰</text>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#94a3b8"/>
+  </marker>
+</defs>
+<rect x="80" y="110" width="1240" height="120" rx="20" fill="#111827" stroke="#334155" stroke-width="2"/>
+<text x="120" y="145" font-size="24" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#93c5fd" font-weight="700">输入层</text>
+<rect x="120" y="165" width="300" height="42" rx="12" fill="#1e293b" stroke="#475569"/>
+<text x="270" y="192" text-anchor="middle" font-size="19" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#e2e8f0">💬 需求描述（自然语言）</text>
+<rect x="450" y="165" width="380" height="42" rx="12" fill="#1e293b" stroke="#475569"/>
+<text x="640" y="192" text-anchor="middle" font-size="19" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#e2e8f0">📜 项目宪法（§1-§8 规则 + §9 教训）</text>
+<rect x="860" y="165" width="380" height="42" rx="12" fill="#1e293b" stroke="#475569"/>
+<text x="1050" y="192" text-anchor="middle" font-size="19" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#e2e8f0">🗂️ 项目上下文（结构 / 依赖 / 路由）</text>
+<rect x="80" y="270" width="1240" height="140" rx="20" fill="#111827" stroke="#334155" stroke-width="2"/>
+<text x="120" y="305" font-size="24" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#a7f3d0" font-weight="700">双层契约</text>
+<rect x="220" y="325" width="380" height="52" rx="14" fill="#064e3b" stroke="#10b981"/>
+<text x="410" y="357" text-anchor="middle" font-size="22" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#ecfdf5">📄 Spec（Markdown，人类可读）</text>
+<rect x="790" y="325" width="380" height="52" rx="14" fill="#0c4a6e" stroke="#38bdf8"/>
+<text x="980" y="357" text-anchor="middle" font-size="22" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#e0f2fe">📊 DSL（JSON，机器可读）</text>
+<line x1="270" y1="207" x2="410" y2="325" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="640" y1="207" x2="410" y2="325" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="1050" y1="207" x2="410" y2="325" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="610" y="252" text-anchor="middle" font-size="16" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#cbd5e1">宪法全文注入所有 prompt</text>
+<line x1="600" y1="351" x2="790" y2="351" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="80" y="450" width="1240" height="150" rx="20" fill="#111827" stroke="#334155" stroke-width="2"/>
+<text x="120" y="485" font-size="24" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#fde68a" font-weight="700">质量门控 + 生成层</text>
+<rect x="120" y="515" width="280" height="50" rx="14" fill="#78350f" stroke="#f59e0b"/>
+<text x="260" y="547" text-anchor="middle" font-size="20" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#fffbeb">🎯 Spec 质量评分</text>
+<rect x="450" y="515" width="280" height="50" rx="14" fill="#3f2a62" stroke="#c084fc"/>
+<text x="590" y="547" text-anchor="middle" font-size="20" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#f5f3ff">🧑‍💻 Approval Gate</text>
+<rect x="780" y="500" width="350" height="80" rx="16" fill="#1d4ed8" stroke="#60a5fa"/>
+<text x="955" y="535" text-anchor="middle" font-size="21" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#eff6ff">⚙️ Task 分层代码生成</text>
+<text x="955" y="562" text-anchor="middle" font-size="16" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#dbeafe">data → service → api → view → route</text>
+<rect x="1160" y="510" width="120" height="60" rx="14" fill="#1e293b" stroke="#64748b"/>
+<text x="1220" y="537" text-anchor="middle" font-size="18" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#e2e8f0">🗄️ Cache</text>
+<text x="1220" y="559" text-anchor="middle" font-size="13" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#cbd5e1">签名 / 契约</text>
+<line x1="980" y1="377" x2="980" y2="500" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="400" y1="540" x2="450" y2="540" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="730" y1="540" x2="780" y2="540" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="1130" y1="540" x2="1160" y2="540" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="1160" y1="555" x2="1130" y2="555" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="365" y="505" text-anchor="middle" font-size="15" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#cbd5e1">通过 / 不足</text>
+<rect x="80" y="645" width="1240" height="130" rx="20" fill="#111827" stroke="#334155" stroke-width="2"/>
+<text x="120" y="680" font-size="24" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#fca5a5" font-weight="700">验证层</text>
+<rect x="240" y="700" width="360" height="46" rx="14" fill="#7f1d1d" stroke="#ef4444"/>
+<text x="420" y="729" text-anchor="middle" font-size="20" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#fef2f2">🔄 错误反馈闭环（≤2 cycle）</text>
+<rect x="760" y="700" width="360" height="46" rx="14" fill="#4c0519" stroke="#f43f5e"/>
+<text x="940" y="729" text-anchor="middle" font-size="20" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#fff1f2">🔬 3-pass 代码审查</text>
+<line x1="955" y1="580" x2="420" y2="700" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="600" y1="723" x2="760" y2="723" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="80" y="810" width="1240" height="120" rx="20" fill="#111827" stroke="#334155" stroke-width="2"/>
+<text x="120" y="845" font-size="24" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#c4b5fd" font-weight="700">学习层（闭环）</text>
+<rect x="260" y="860" width="360" height="42" rx="14" fill="#312e81" stroke="#818cf8"/>
+<text x="440" y="887" text-anchor="middle" font-size="19" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#eef2ff">📚 §9 知识积累</text>
+<rect x="780" y="860" width="360" height="42" rx="14" fill="#14532d" stroke="#4ade80"/>
+<text x="960" y="887" text-anchor="middle" font-size="19" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#f0fdf4">📈 Harness Self-Eval</text>
+<line x1="940" y1="746" x2="440" y2="860" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="940" y1="746" x2="960" y2="860" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="440" y1="860" x2="640" y2="207" stroke="#94a3b8" stroke-width="3" stroke-dasharray="8 8" marker-end="url(#arrow)"/>
+<text x="560" y="525" text-anchor="middle" transform="rotate(-73 560 525)" font-size="15" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#cbd5e1">更新宪法 §9</text>
+</svg>

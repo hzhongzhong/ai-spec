@@ -1,0 +1,219 @@
+import * as path from "path";
+import * as fs from "fs-extra";
+import { SpecDSL, ModelField, ApiEndpoint } from "./dsl-types";
+
+// ─── Type Mapping ─────────────────────────────────────────────────────────────
+
+const PRIMITIVE_MAP: Record<string, string> = {
+  String: "string",
+  string: "string",
+  Int: "number",
+  int: "number",
+  Float: "number",
+  float: "number",
+  Number: "number",
+  number: "number",
+  Boolean: "boolean",
+  boolean: "boolean",
+  DateTime: "string",
+  Date: "string",
+  Json: "Record<string, unknown>",
+  JSON: "Record<string, unknown>",
+  Any: "unknown",
+  any: "unknown",
+};
+
+function mapFieldType(raw: string): string {
+  const trimmed = raw.trim();
+  // Array types: "String[]" or "User[]"
+  if (trimmed.endsWith("[]")) {
+    return `${mapFieldType(trimmed.slice(0, -2))}[]`;
+  }
+  // Nullable / optional markers
+  const base = trimmed.replace(/[?!]$/, "");
+  if (PRIMITIVE_MAP[base]) return PRIMITIVE_MAP[base];
+  // PascalCase → treat as model reference (stays as-is)
+  if (/^[A-Z]/.test(base)) return base;
+  return "string";
+}
+
+// ─── Model → Interface ────────────────────────────────────────────────────────
+
+function renderModelInterface(
+  name: string,
+  fields: ModelField[],
+  description?: string
+): string {
+  const lines: string[] = [];
+  if (description) lines.push(`/** ${description} */`);
+  lines.push(`export interface ${name} {`);
+  for (const f of fields) {
+    const optional = f.required ? "" : "?";
+    const tsType = mapFieldType(f.type);
+    if (f.description) lines.push(`  /** ${f.description} */`);
+    lines.push(`  ${f.name}${optional}: ${tsType};`);
+  }
+  lines.push("}");
+  return lines.join("\n");
+}
+
+// ─── Endpoint → Request/Response types ───────────────────────────────────────
+
+function sanitizeName(str: string): string {
+  // "/users/:id" → "UsersById", "POST /auth/login" → "PostAuthLogin"
+  return str
+    .replace(/^\//, "")
+    .replace(/:([a-zA-Z]+)/g, "By$1")
+    .split(/[\/\-_]/)
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join("");
+}
+
+function endpointTypeName(ep: ApiEndpoint): string {
+  return ep.method.charAt(0) + ep.method.slice(1).toLowerCase() + sanitizeName(ep.path);
+}
+
+function renderEndpointTypes(ep: ApiEndpoint): string | null {
+  const baseName = endpointTypeName(ep);
+  const parts: string[] = [];
+
+  parts.push(`// ${ep.method} ${ep.path}${ep.description ? ` — ${ep.description}` : ""}`);
+
+  let hasRequest = false;
+
+  // Request body
+  if (ep.request?.body && Object.keys(ep.request.body).length > 0) {
+    hasRequest = true;
+    parts.push(`export interface ${baseName}Request {`);
+    for (const [key, typeDesc] of Object.entries(ep.request.body)) {
+      const tsType = mapFieldType(typeDesc);
+      parts.push(`  ${key}: ${tsType};`);
+    }
+    parts.push("}");
+  }
+
+  // Query params
+  if (ep.request?.query && Object.keys(ep.request.query).length > 0) {
+    parts.push(`export interface ${baseName}Query {`);
+    for (const [key, typeDesc] of Object.entries(ep.request.query)) {
+      const tsType = mapFieldType(typeDesc);
+      parts.push(`  ${key}?: ${tsType};`);
+    }
+    parts.push("}");
+  }
+
+  // Path params
+  if (ep.request?.params && Object.keys(ep.request.params).length > 0) {
+    parts.push(`export interface ${baseName}Params {`);
+    for (const [key, typeDesc] of Object.entries(ep.request.params)) {
+      const tsType = mapFieldType(typeDesc);
+      parts.push(`  ${key}: ${tsType};`);
+    }
+    parts.push("}");
+  }
+
+  if (parts.length === 1) return null; // only comment, no types to emit
+  return parts.join("\n");
+}
+
+// ─── Endpoint map constant ───────────────────────────────────────────────────
+
+function renderEndpointMap(endpoints: ApiEndpoint[]): string {
+  const lines: string[] = [];
+  lines.push("export const API_ENDPOINTS = {");
+  for (const ep of endpoints) {
+    const key = endpointTypeName(ep);
+    const keyLower = key.charAt(0).toLowerCase() + key.slice(1);
+    lines.push(`  ${keyLower}: { method: '${ep.method}', path: '${ep.path}', auth: ${ep.auth} },`);
+  }
+  lines.push("} as const;");
+  lines.push("");
+  lines.push("export type ApiEndpointKey = keyof typeof API_ENDPOINTS;");
+  return lines.join("\n");
+}
+
+// ─── Main generator ───────────────────────────────────────────────────────────
+
+export interface TypesGeneratorOptions {
+  /** Include endpoint request/response types (default: true) */
+  includeEndpointTypes?: boolean;
+  /** Include API_ENDPOINTS constant map (default: true) */
+  includeEndpointMap?: boolean;
+  /** Header comment to inject */
+  header?: string;
+}
+
+export function generateTypescriptTypes(
+  dsl: SpecDSL,
+  opts: TypesGeneratorOptions = {}
+): string {
+  const {
+    includeEndpointTypes = true,
+    includeEndpointMap = true,
+  } = opts;
+
+  const sections: string[] = [];
+
+  // Header
+  const header = opts.header ?? `// Generated by ai-spec — DO NOT EDIT\n// Feature: ${dsl.feature.title}\n// Generated at: ${new Date().toISOString()}`;
+  sections.push(header);
+
+  // Data Models
+  if (dsl.models.length > 0) {
+    sections.push("// ─── Data Models " + "─".repeat(57));
+    for (const model of dsl.models) {
+      sections.push(renderModelInterface(model.name, model.fields, model.description));
+    }
+  }
+
+  // Frontend Components (props only)
+  if (dsl.components && dsl.components.length > 0) {
+    sections.push("// ─── Component Props " + "─".repeat(53));
+    for (const comp of dsl.components) {
+      const lines: string[] = [];
+      if (comp.description) lines.push(`/** ${comp.description} */`);
+      lines.push(`export interface ${comp.name}Props {`);
+      for (const prop of comp.props) {
+        const optional = prop.required ? "" : "?";
+        const tsType = mapFieldType(prop.type);
+        if (prop.description) lines.push(`  /** ${prop.description} */`);
+        lines.push(`  ${prop.name}${optional}: ${tsType};`);
+      }
+      lines.push("}");
+      sections.push(lines.join("\n"));
+    }
+  }
+
+  // Endpoint request/response types
+  if (includeEndpointTypes && dsl.endpoints.length > 0) {
+    sections.push("// ─── API Request Types " + "─".repeat(51));
+    for (const ep of dsl.endpoints) {
+      const rendered = renderEndpointTypes(ep);
+      if (rendered) sections.push(rendered);
+    }
+  }
+
+  // Endpoint map
+  if (includeEndpointMap && dsl.endpoints.length > 0) {
+    sections.push("// ─── Endpoint Map " + "─".repeat(55));
+    sections.push(renderEndpointMap(dsl.endpoints));
+  }
+
+  return sections.join("\n\n") + "\n";
+}
+
+// ─── File save ────────────────────────────────────────────────────────────────
+
+export async function saveTypescriptTypes(
+  dsl: SpecDSL,
+  projectDir: string,
+  opts: TypesGeneratorOptions & { outputPath?: string } = {}
+): Promise<string> {
+  const outputPath =
+    opts.outputPath ?? path.join(projectDir, ".ai-spec", `${dsl.feature.title.replace(/\s+/g, "-").toLowerCase()}.types.ts`);
+
+  await fs.ensureDir(path.dirname(outputPath));
+  const content = generateTypescriptTypes(dsl, opts);
+  await fs.writeFile(outputPath, content, "utf-8");
+  return outputPath;
+}

@@ -1,0 +1,49 @@
+{
+  "name": "ai-spec-dev",
+  "version": "0.37.0",
+  "description": "AI-driven Development Orchestrator SDK & CLI",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "ai-spec": "dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "ai",
+    "spec",
+    "codegen",
+    "gemini",
+    "claude"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.38.0",
+    "@google/generative-ai": "^0.21.0",
+    "@inquirer/editor": "^5.0.10",
+    "@inquirer/prompts": "^8.3.2",
+    "axios": "^1.13.6",
+    "chalk": "^4.1.2",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.7",
+    "fs-extra": "^11.3.0",
+    "inquirer": "^8.2.6",
+    "openai": "^6.31.0",
+    "undici": "^7.24.4"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/glob": "^8.1.0",
+    "@types/node": "^22.13.5",
+    "glob": "^13.0.6",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.0"
+  }
+}
