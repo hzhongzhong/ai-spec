@@ -7,6 +7,7 @@ import { getCodeGenSystemPrompt } from "../prompts/codegen.prompt";
 import { SpecDSL } from "./dsl-types";
 import { buildDslContextSection } from "./dsl-extractor";
 import { getActiveSnapshot } from "./run-snapshot";
+import { startSpinner } from "./cli-ui";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -369,16 +370,17 @@ ${fileContent}
 
 Output ONLY the complete fixed file content. No markdown fences, no explanations.`;
 
+    const fixSpinner = startSpinner(`Fixing ${chalk.bold(file)} (${fileErrors.length} error(s))...`);
     try {
       const raw = await provider.generate(prompt, getCodeGenSystemPrompt());
       const fixed = raw.replace(/^```\w*\n?/gm, "").replace(/\n?```$/gm, "").trim();
       await getActiveSnapshot()?.snapshotFile(fullPath);
       await fs.writeFile(fullPath, fixed, "utf-8");
       results.push({ fixed: true, file, explanation: `Fixed ${fileErrors.length} error(s)` });
-      console.log(chalk.green(`  ✔ Auto-fixed: ${file}`));
+      fixSpinner.succeed(`Auto-fixed: ${file}`);
     } catch (err) {
       results.push({ fixed: false, file, explanation: `AI fix failed: ${(err as Error).message}` });
-      console.log(chalk.yellow(`  ⚠ Could not auto-fix: ${file}`));
+      fixSpinner.fail(`Could not auto-fix: ${file}`);
     }
   }
 

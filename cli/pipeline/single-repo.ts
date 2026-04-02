@@ -51,6 +51,7 @@ import {
   loadVcrRecording,
 } from "../../core/vcr";
 import { printBanner } from "./helpers";
+import { startSpinner, startStage } from "../../core/cli-ui";
 
 // ─── Pipeline Options ────────────────────────────────────────────────────────
 
@@ -168,7 +169,7 @@ export async function runSingleRepoPipeline(
       console.log(chalk.yellow(`  ⚠ Constitution is long (${context.constitution.length.toLocaleString()} chars). Consider running: ai-spec init --consolidate`));
     }
   } else {
-    console.log(chalk.yellow("  Constitution : not found — auto-generating..."));
+    const constitutionSpinner = startSpinner("Constitution not found — auto-generating...");
     try {
       const constitutionGen = new ConstitutionGenerator(
         createProvider(specProviderName, specApiKey, specModelName)
@@ -176,9 +177,9 @@ export async function runSingleRepoPipeline(
       const constitutionContent = await constitutionGen.generate(currentDir);
       await constitutionGen.saveConstitution(currentDir, constitutionContent);
       context.constitution = constitutionContent;
-      console.log(chalk.green(`  Constitution : ✔ generated and saved (.ai-spec-constitution.md)`));
+      constitutionSpinner.succeed("Constitution generated and saved (.ai-spec-constitution.md)");
     } catch (err) {
-      console.log(chalk.yellow(`  Constitution : ⚠ auto-generation failed (${(err as Error).message}), continuing without it.`));
+      constitutionSpinner.fail(`Constitution auto-generation failed (${(err as Error).message}), continuing without it.`);
     }
   }
 
@@ -214,17 +215,18 @@ export async function runSingleRepoPipeline(
   let initialTasks: import("../../core/task-generator").SpecTask[] = [];
 
   runLogger.stageStart("spec_gen", { provider: specProviderName, model: specModelName });
+  const specSpinner = startStage("spec_gen", `Generating spec with ${specProviderName}/${specModelName}...`);
   try {
     if (opts.skipTasks) {
       const { SpecGenerator } = await import("../../core/spec-generator");
       const generator = new SpecGenerator(specProvider);
       initialSpec = await generator.generateSpec(idea, context, architectureDecision);
-      console.log(chalk.green("  ✔ Spec generated."));
+      specSpinner.succeed("Spec generated.");
     } else {
       const result = await generateSpecWithTasks(specProvider, idea, context, architectureDecision);
       initialSpec = result.spec;
       initialTasks = result.tasks;
-      console.log(chalk.green(`  ✔ Spec generated.`));
+      specSpinner.succeed("Spec generated.");
       if (initialTasks.length > 0) {
         console.log(chalk.green(`  ✔ ${initialTasks.length} tasks generated (combined call).`));
       } else {
@@ -233,8 +235,8 @@ export async function runSingleRepoPipeline(
     }
     runLogger.stageEnd("spec_gen", { taskCount: initialTasks.length });
   } catch (err) {
+    specSpinner.fail(`Spec generation failed: ${(err as Error).message}`);
     runLogger.stageFail("spec_gen", (err as Error).message);
-    console.error(chalk.red("  ✘ Spec generation failed:"), err);
     process.exit(1);
   }
 
@@ -262,7 +264,9 @@ export async function runSingleRepoPipeline(
       console.log(chalk.blue("\n[3.4/6] Spec quality assessment..."));
     }
     runLogger.stageStart("spec_assess");
+    const assessSpinner = startStage("spec_assess", "Evaluating spec quality...");
     const assessment = await assessSpec(specProvider, finalSpec, context.constitution ?? undefined);
+    assessSpinner.stop();
     if (assessment) {
       runLogger.stageEnd("spec_assess", { overallScore: assessment.overallScore });
       if (!opts.auto) printSpecAssessment(assessment);
@@ -366,21 +370,24 @@ export async function runSingleRepoPipeline(
     console.log(chalk.blue("\n[DSL] Extracting structured DSL from spec..."));
     console.log(chalk.gray(`  Provider: ${specProviderName}/${specModelName}`));
     runLogger.stageStart("dsl_extract");
+    const dslSpinner = startStage("dsl_extract", "Extracting DSL from spec...");
     try {
       const isFrontend = isFrontendDeps(context.dependencies);
-      if (isFrontend) console.log(chalk.gray("  Frontend project detected — using ComponentSpec extractor"));
+      if (isFrontend) {
+        dslSpinner.update("🔗  Extracting DSL (frontend ComponentSpec mode)...");
+      }
       const dslExtractor = new DslExtractor(specProvider);
       extractedDsl = await dslExtractor.extract(finalSpec, { auto: opts.auto, isFrontend });
       if (extractedDsl) {
         runLogger.stageEnd("dsl_extract", { endpoints: extractedDsl.endpoints?.length ?? 0, models: extractedDsl.models?.length ?? 0 });
-        console.log(chalk.green("  ✔ DSL extracted and validated."));
+        dslSpinner.succeed("DSL extracted and validated.");
       } else {
         runLogger.stageEnd("dsl_extract", { skipped: true });
-        console.log(chalk.yellow("  ⚠ DSL skipped — codegen will use Spec + Tasks only."));
+        dslSpinner.fail("DSL skipped — codegen will use Spec + Tasks only.");
       }
     } catch (err) {
       runLogger.stageFail("dsl_extract", (err as Error).message);
-      console.log(chalk.yellow(`  ⚠ DSL extraction error: ${(err as Error).message} — continuing without DSL.`));
+      dslSpinner.fail(`DSL extraction error: ${(err as Error).message} — continuing without DSL.`);
     }
   }
 
@@ -590,6 +597,7 @@ export async function runSingleRepoPipeline(
   if (!opts.skipReview) {
     console.log(chalk.blue("\n[9/9] Automated code review (3-pass: architecture + implementation + impact/complexity)..."));
     runLogger.stageStart("review");
+    const reviewSpinner = startStage("review", "Running 3-pass code review...");
     const reviewer = new CodeReviewer(specProvider, workingDir);
     const savedSpec = await fs.readFile(specFile, "utf-8");
 
@@ -598,6 +606,7 @@ export async function runSingleRepoPipeline(
     } else {
       reviewResult = await reviewer.reviewCode(savedSpec, specFile);
     }
+    reviewSpinner.succeed("Code review complete.");
     runLogger.stageEnd("review");
 
     // Surface Pass 0 compliance score

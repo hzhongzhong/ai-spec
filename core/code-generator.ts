@@ -22,6 +22,7 @@ import {
 } from "./codegen/helpers";
 import { topoSortLayerTasks, printTaskProgress, LAYER_ICONS } from "./codegen/topo-sort";
 import { estimateTokens, getDefaultBudget } from "./token-budget";
+import { startSpinner } from "./cli-ui";
 
 // Re-export public symbols for backward compatibility
 export { extractBehavioralContract } from "./codegen/helpers";
@@ -654,6 +655,7 @@ ${constitutionSection}
 === ${existingContent ? "Existing content (modify and return the complete file)" : "Create this file from scratch"} ===
 ${existingContent || "Output only the complete file content."}`;
 
+      const fileSpinner = startSpinner(`${prefix}Generating ${chalk.bold(item.file)}...`);
       try {
         const raw = await this.provider.generate(codePrompt, systemPrompt);
         const fileContent = stripCodeFences(raw);
@@ -661,11 +663,11 @@ ${existingContent || "Output only the complete file content."}`;
         await fs.ensureDir(path.dirname(fullPath));
         await fs.writeFile(fullPath, fileContent, "utf-8");
         getActiveLogger()?.fileWritten(item.file);
-        console.log(`${prefix}${existingContent ? chalk.yellow("~") : chalk.green("+")} ${chalk.bold(item.file)} ${chalk.green("✔")}`);
+        fileSpinner.succeed(`${existingContent ? chalk.yellow("~") : chalk.green("+")} ${chalk.bold(item.file)}`);
         successCount++;
         writtenFiles.push(item.file);
       } catch (err) {
-        console.log(`${prefix}${chalk.red("✘")} ${chalk.bold(item.file)} — ${chalk.red((err as Error).message)}`);
+        fileSpinner.fail(`${chalk.bold(item.file)} — ${(err as Error).message}`);
       }
     }
 

@@ -1,6 +1,5 @@
 import chalk from "chalk";
-
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+import { retryCountdown } from "./cli-ui";
 
 // ─── Error Classification ──────────────────────────────────────────────────────
 
@@ -112,12 +111,14 @@ export async function withReliability<T>(
         throw classifyError(err, label);
       }
       const waitMs = attempt === 0 ? 2_000 : 6_000;
-      console.warn(
-        chalk.yellow(`  ⚠ ${label} failed (attempt ${attempt + 1}/${retries + 1}), retrying in ${waitMs / 1000}s`) +
-          chalk.gray(` — ${(err as Error).message}`)
-      );
       onRetry?.(attempt + 1, err);
-      await sleep(waitMs);
+      await retryCountdown({
+        attempt: attempt + 1,
+        maxAttempts: retries + 1,
+        waitMs,
+        errorMessage: (err as Error).message ?? String(err),
+        label,
+      });
     }
   }
   /* istanbul ignore next */
