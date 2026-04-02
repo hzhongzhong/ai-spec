@@ -6,3 +6,5 @@ dist/
 .ai-spec-keys.json
 .claude/
 .npmrc
+RELEASE_LOG.md
+purpose.md
