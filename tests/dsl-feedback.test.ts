@@ -238,6 +238,51 @@ describe("extractStructuralFindings", () => {
       expect(f.description.length).toBeGreaterThan(0);
     }
   });
+
+  it("parses structured JSON block from review text", () => {
+    const pass1 = `## Architecture
+Score: 5/10
+
+## 🔍 结构性发现 JSON
+\`\`\`json
+{
+  "structuralFindings": [
+    { "category": "auth_design", "description": "POST /admin lacks auth" },
+    { "category": "model_design", "description": "User model missing email field" }
+  ]
+}
+\`\`\``;
+    const findings = extractStructuralFindings(`${pass1}\n${SEP}\nimpl`);
+    expect(findings).toHaveLength(2);
+    expect(findings[0].category).toBe("auth_design");
+    expect(findings[1].category).toBe("model_design");
+  });
+
+  it("filters invalid entries from JSON block", () => {
+    const pass1 = `Score: 5/10
+\`\`\`json
+{
+  "structuralFindings": [
+    { "category": "auth_design", "description": "valid" },
+    { "bad": true },
+    "not an object"
+  ]
+}
+\`\`\``;
+    const findings = extractStructuralFindings(pass1);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].description).toBe("valid");
+  });
+
+  it("falls back to regex when JSON is malformed", () => {
+    const pass1 = `Score: 5/10
+\`\`\`json
+{ broken json!!!
+\`\`\`
+Several endpoints have missing auth requirements.`;
+    const findings = extractStructuralFindings(pass1);
+    expect(findings.some((f) => f.category === "auth_design")).toBe(true);
+  });
 });
 
 // ─── Prompt builders (smoke tests) ────────────────────────────────────────────

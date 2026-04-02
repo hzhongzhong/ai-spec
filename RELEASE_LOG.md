@@ -5,6 +5,237 @@
 
 ---
 
+## v0.41.0 — 2026-04-02 — P2 修复（测试缺口补全 + 类型安全）
+
+### 测试缺口补全
+
+**#13 — error-feedback 修复逻辑测试（`tests/error-feedback-repair.test.ts` — NEW, 36 tests）**
+
+新增 `parseErrors` / `parseRelativeImports` / `buildRepairOrder` / `detectBuildCommand` / `detectTestCommand` / `detectLintCommand` 6 个函数的独立测试。覆盖：TS/Go/Python 错误格式解析、noise 过滤（npm timing/node_modules/stack trace）、20 条上限截断、长消息 400 字符截断、相对导入提取（含 type import 跳过/多行 import）、依赖排序（含循环依赖/不可读文件）、7 语言构建/测试/lint 命令检测。
+
+导出 `parseErrors` / `parseRelativeImports` / `buildRepairOrder` / `detectBuildCommand` / `detectTestCommand` / `detectLintCommand` / `ErrorEntry` 以支持测试。
+
+**#15 — dsl-feedback JSON 解析路径测试（`tests/dsl-feedback.test.ts` — +3 tests）**
+
+新增 3 个 `extractStructuralFindings` 测试：结构化 JSON block 解析、无效条目过滤、JSON 格式错误时 regex fallback。总计 26→29 tests。
+
+### 类型安全
+
+**#19 — `SingleRepoPipelineOpts` 类型定义**
+
+- `cli/pipeline/single-repo.ts`: 新增 `SingleRepoPipelineOpts` 接口（22 个字段），替换 `Record<string, any>`
+- IDE 补全、重构安全、拼写错误编译期检测
+
+### 测试统计
+
+**42 → 43 个测试文件，741 → 780 test cases（+39）**
+
+---
+
+## v0.40.0 — 2026-04-02 — P0+P1 关键修复（8 项安全/健壮性改进）
+
+### Critical（P0）
+
+**C1 — 消除 `process.chdir()` 竞态条件**
+
+- `cli/pipeline/single-repo.ts`: `CodeReviewer` 构造参数从 `currentDir` 改为 `workingDir`，移除 `process.chdir(workingDir)` / `process.chdir(originalDir)` 块
+- `cli/pipeline/multi-repo.ts`: 同上，`new CodeReviewer(specProvider)` → `new CodeReviewer(specProvider, workingDir)`
+- reviewer.ts 的 `getGitDiff()` 已正确使用 `cwd: this.projectRoot`，无需 chdir
+
+**C2 — `Promise.all` → `Promise.allSettled`（layer 批次执行）**
+
+- `core/code-generator.ts`: 批次任务执行从 `Promise.all + .catch()` 改为 `Promise.allSettled`，rejected 结果逐个处理并输出失败任务 ID + 原因，不中断同批次其他任务
+
+**C3 — 统一 JSON 解析工具（`core/safe-json.ts` — NEW）**
+
+- 新增 `safeParseJson<T>()`（返回 null）和 `parseJsonFromAiOutput<T>()`（抛异常）
+- 支持 3 种解析策略：裸 JSON / fenced JSON / 嵌入文本提取，每种策略内 try/catch 保护
+- 替换 `dsl-extractor.ts`、`requirement-decomposer.ts`、`spec-updater.ts` 中重复的 `parseJsonFromOutput()` 函数
+
+### High（P1）
+
+**H2 — VCR 回放 prompt hash 校验**
+
+- `core/vcr.ts` `VcrReplayProvider`: 回放时计算当前 prompt 的 SHA-256[:8] 与录制条目的 `callHash` 比对
+- 新增 `mismatches` / `hasMismatches` 属性追踪不匹配条目
+- `cli/pipeline/single-repo.ts`: pipeline 结束时输出 mismatch 警告（不阻断回放）
+
+**H3 — DSL 验证器交叉引用检查**
+
+- `core/dsl-validator.ts` 新增 `crossReferenceChecks()`：
+  - 重复 path+method 检测
+  - model relations 引用不存在的 model 名称
+  - component apiCalls 引用不存在的 endpoint ID
+
+**H4 — execSync 全局超时**
+
+- `core/reviewer.ts`: git 命令 `timeout: 30_000`
+- `core/code-generator.ts`: `claude --version` 检查 `timeout: 10_000`
+- `core/codegen/helpers.ts`: `rtk --version` 检查 `timeout: 10_000`
+- `cli/commands/dashboard.ts`: 浏览器打开 `timeout: 10_000`
+
+### Medium（P1）
+
+**M1 — 前端框架检测扩展**
+
+- `core/frontend-context-loader.ts`: `FrontendFramework` 类型新增 `svelte` | `sveltekit` | `solid` | `qwik` | `remix` | `astro`
+- 检测逻辑：`@sveltejs/kit` → sveltekit, `svelte` → svelte, `@builder.io/qwik` → qwik, `@remix-run/react` → remix, `astro` → astro, `solid-js` → solid
+- 新增路由识别：sveltekit/remix/astro 使用 file-based routing, `@solidjs/router`, `@builder.io/qwik-city`
+
+**M6 — Error Feedback 断路器增强**
+
+- `core/error-feedback.ts`: 区分"错误数量不变"（黄色 ⚠ 无进展）和"错误数量增加"（红色 ✘ 引入回归），后者输出更强烈的回归警告
+
+### 新增测试
+
+| # | 文件 | 测试数 | 覆盖内容 |
+|---|------|--------|----------|
+| 31 | `safe-json.test.ts` | 13 | `safeParseJson`（裸 JSON/数组/fenced/嵌入文本/无效/空白/泛型）+ `parseJsonFromAiOutput`（有效/无效/空） |
+| 32 | `dsl-validator-xref.test.ts` | 6 | 重复路由检测 / 不同 method 允许 / relation 引用不存在 model / relation 正常 / apiCalls 引用不存在 endpoint / apiCalls 正常 |
+| 33 | `vcr-hash.test.ts` | 7 | prompt 匹配/不匹配/system 变更/多次调用追踪/mismatch 仍返回响应/exhausted/recording |
+
+**测试覆盖率提升：39 → 42 个测试文件，715 → 741 test cases**
+
+---
+
+## v0.39.0 — 2026-04-02 — Pipeline 质量增强（Phase 1+2：4 个结构性缺口修补）
+
+### 新增功能
+
+**Gap 3 — 测试存在性校验（`core/error-feedback.ts`）**
+
+Error Feedback 循环前新增 `validateTestFilesExist()` 预检：检查生成的测试文件是否存在于磁盘且包含实际测试 pattern（`describe(`/`it(`/`test(`/`func Test`/`def test_`/`@Test`/`#[test]`）。无有效测试文件时输出 "tests not validated" 警告，防止 `npm test` exit 0 的假阴性。
+
+**Gap 4 — §9 自动压缩（`core/knowledge-memory.ts`）**
+
+新增 `maybeAutoConsolidate()`：Review 知识积累完成后，自动检查 §9 教训条数，超阈值（默认 12，`.ai-spec.json` `autoConsolidateThreshold` 可配）自动调用 `ConstitutionConsolidator` 压缩。非阻塞、有备份、失败不影响 pipeline。
+
+**Gap 1 — Spec↔DSL 覆盖率检查（`core/dsl-coverage-checker.ts` — NEW）**
+
+新模块：从 Spec markdown 提取 User Story（中英文 `作为`/`As a`）、功能需求（checklist `- [ ]` 和编号条目）、边界条件，通过关键词匹配（CJK 字符/双字词 + 英文词，过滤停用词）校验每条需求是否在 DSL endpoint/model/behavior 中有对应。覆盖率 <80% 时注入 `uncovered_requirement` 类型的 `DslGap`，走已有 gap feedback 流程。
+
+**Gap 2 — Token 预算管理（`core/token-budget.ts` — NEW）**
+
+新模块：`estimateTokens()` 轻量估算（CJK ~1 token/字，英文 ~4 chars/token）；`assembleSections()` 按优先级裁剪；`getDefaultBudget()` 按 provider 返回默认预算（Gemini 900K / Claude 180K / OpenAI 120K / default 100K）。集成到 `code-generator.ts`（上下文组装时检测并裁剪 §9）和 `dsl-extractor.ts`（替换硬编码 `MAX_SPEC_CHARS=12000`，按 provider 动态计算上限）。
+
+### 新增测试
+
+**Test 27 — `dsl-coverage-checker.test.ts`（18 tests）** — `extractKeywords`（英文/CJK/混合/停用词过滤/空输入）、`extractSpecRequirements`（中文 User Story/英文 User Story/checklist 功能需求/编号子条目/边界条件/无需求返回空）、`checkDslCoverage`（空需求/endpoint 匹配/未覆盖检测/model 字段匹配/behavior 匹配/低覆盖率）
+
+**Test 28 — `token-budget.test.ts`（13 tests）** — `estimateTokens`（空字符串/英文/CJK/混合/代码）、`assembleSections`（全部包含/优先级排序/超预算裁剪/完全丢弃/空 section 跳过/空输入）、`getDefaultBudget`（已知 provider/未知 provider）
+
+**Test 29 — `error-feedback-validation.test.ts`（10 tests）** — `validateTestFilesExist`（空列表/不存在文件/无 test pattern/describe/test/Go func Test/Python def test_/多文件混合/Java @Test/Rust #[test]）
+
+**Test 30 — `auto-consolidation.test.ts`（6 tests）** — `maybeAutoConsolidate`（无 constitution/低于阈值/触发压缩/失败容错/自定义阈值/默认阈值 12）
+
+**测试覆盖率提升：85.0% → 87.2%（35 → 39 个测试文件，668 → 715 test cases）**
+
+---
+
+## v0.38.0 — 2026-04-02 — Bug 修复 + 测试清理 + P0 测试覆盖 + 模块拆分
+
+### Bug 修复
+
+**Fix 1 — `CodeReviewer.getGitDiff()` 未使用 `projectRoot` 作为 cwd（`core/reviewer.ts`）**
+
+`getGitDiff()` 中所有 `execSync("git ...")` 调用未传 `cwd: this.projectRoot`，导致 Review 始终在进程工作目录而非指定项目根目录执行 diff。当 `CodeReviewer` 实例化时传入的 `projectRoot` 与 `process.cwd()` 不同（如 workspace 模式或测试环境），会拿到错误项目的 diff 甚至误报 "No changes"。
+
+- 为 `getGitDiff()` 内 `silent` 对象统一添加 `cwd: this.projectRoot`
+- 修复对应测试：改为在隔离的 `git init` 目录中运行，不再依赖宿主环境
+
+### 测试清理
+
+**`tests 2/` 目录删除**
+
+发现 `tests 2/` 目录下 9 个测试文件与 `tests/` 完全重复（`tests/` 为超集，dsl-validator 38 > 30），属于历史遗留。删除后消除 186 个重复执行的测试，CI 运行时间减少约 40%。
+
+### 新增测试（P0 模块覆盖）
+
+**Test 10 — `frontend-context-loader.test.ts`（64 tests）**
+
+覆盖 `parseImportStatements`（默认 import / named import / 多行 named import / import type 跳过 / 块注释内跳过 / 空输入 / 多条 import / 原始行保留）、`findHttpClientImport`（axios / @/ 别名 / ~/ 别名 / #/ 别名 / ky / undici / alova / 相对路径 request / 无 HTTP import / import type 跳过 / 多行匹配 / 首匹配优先）、`loadFrontendContext` 集成测试（无 package.json 默认值 / React/Vue/Next/React Native 框架检测 / zustand+jotai+pinia 状态管理 / axios+swr HTTP 客户端 / antd+element-plus UI 库 / react-router+vue-router+next-app-router+next-pages-router 路由 / RTL+vitest+cypress 测试框架 / src/api+src/services API 文件发现 / test 文件排除 / httpClientImport 提取含多行 / store 文件发现 / hook 文件发现 / 可复用组件发现 / page 示例读取 / pagination 提取含 interface+函数+箭头函数+嵌套对象+type.ts 跳过 / layout 静态 import+动态 import / 损坏 package.json 容错 / 空 dependencies 容错）、`buildFrontendContextSection`（基本信息 / layout import COPY THIS EXACTLY / httpClientImport / pagination / store CRITICAL 警告 / reusable components / 边界标记 / 空 state management）。
+
+为支持直接单元测试，`parseImportStatements` 和 `findHttpClientImport` 从 private 改为 `export`。
+
+**Test 11 — `run-logger.test.ts`（22 tests）**
+
+覆盖 `generateRunId`（非空 / 格式校验 / 唯一性）、`RunLogger` 类（构造时创建目录和文件 / provider+model 元数据存储 / stageStart+stageEnd 含 duration / stageFail 含 error 记录 / setPromptHash / setHarnessScore / fileWritten 去重 / finish 设置 endedAt+totalDurationMs / printSummary 不抛错 / JSONL header 写入 / JSONL 各类型行完整性）、`reconstructRunLogFromJsonl`（完整重建 / 不存在文件返回 null / 缺 header 返回 null / 损坏行跳过 / 崩溃恢复无 footer / 空文件）、singleton 访问器（get/set 往返）。
+
+**Test 12 — `knowledge-memory.test.ts`（25 tests）**
+
+覆盖 `extractIssuesFromReview`（标准格式提取 / security+performance+bug+pattern+general 分类 / 无 issues 段返回空 / 短条目跳过 / 上限 10 条 / markdown bold 剥离 / 数字列表 / 长描述截断 200）、`appendLessonsToConstitution`（创建 §9 段 / 追加到已有 §9 / 去重 / 无宪法文件跳过 / 空数组不操作 / 各 category badge 对应 🔒⚡🐛📐📝 / 日期戳格式）、`appendDirectLesson`（正常追加 / 无宪法返回失败 / 去重 60 字符 / 创建 §9）、`accumulateReviewKnowledge` 集成（提取+追加 / 无 issues 不操作）。
+
+**Test 13 — `prompt-hasher.test.ts`（3 tests）** — 哈希格式、确定性、长度校验
+
+**Test 14 — `run-snapshot.test.ts`（9 tests）** — snapshotFile（备份创建/不存在文件跳过/去重/相对路径）、restore（全量恢复/无备份返回空）、singleton 访问器
+
+**Test 15 — `global-constitution.test.ts`（10 tests）** — mergeConstitutions（全局标记/项目高优先级标记/空内容跳过/trim）、loadGlobalConstitution（不存在返回 null/extraRoots 优先/首目录优先）、saveGlobalConstitution
+
+**Test 16 — `contract-bridge.test.ts`（19 tests）** — buildFrontendApiContract（端点数量/method+path/auth/errorCodes/请求类型接口/响应类型接口/model 字段匹配/204 No Content/类型定义块/summary 含 feature/auth 标签/空 errors/无 models/TS 类型推断/token 响应）、buildContractContextSection（边界标记/summary/TypeScript 定义/不可修改指令）
+
+**Test 17 — `workspace-loader.test.ts`（30 tests）** — detectRepoType（Go/Rust/Java pom+gradle/Python requirements+pyproject/PHP/React Native/Next.js/React/Vue/Koa/Express/NestJS/Prisma/空 package.json/无 manifest/损坏 JSON）、WorkspaceLoader（load null/invalid JSON/missing fields/empty repos/正常加载/constitution 加载/resolveAbsPath/save 去除 constitution/autoDetect 含 dotfile+node_modules 跳过+名称过滤/getProcessingOrder 角色排序）
+
+**Test 18 — `project-index.test.ts`（13 tests）** — loadIndex/saveIndex 往返、runScan（Node.js 项目发现/Go 项目/跳过目录/hasConstitution+hasWorkspace 标志/增量 added+nowMissing+updated/maxDepth 限制/路径排序/techStack 提取）
+
+**Test 19 — `combined-generator.test.ts`（6 tests）** — generateSpecWithTasks（spec+tasks 解析/无分隔符/无效 JSON/architecture decision 注入/context 注入/trim）
+
+**Test 20 — `requirement-decomposer.test.ts`（12 tests）** — sortByDependency（无依赖优先/多层级/循环依赖安全/独立保序/空数组）、decompose（有效响应解析/fenced JSON/无效 JSON 抛错/缺 summary/空 repos/AI 失败/字段默认值）
+
+**Test 21 — `constitution-generator.test.ts`（7 tests）** — generate 调用 provider/saveConstitution 文件写入/loadConstitution 存在+不存在/printConstitutionHint 存在+不存在
+
+**Test 22 — `test-generator.test.ts`（9 tests）** — generate（写入测试文件/无效 JSON/AI 失败/前端模式检测/已有测试目录/fenced JSON）、generateTdd（写入 TDD 文件/AI 失败/无效 JSON）
+
+**Test 23 — `key-store.test.ts`（4 tests）** — getSavedKey 未知 provider/saveKey+getSavedKey 往返/clearKey/clearAllKeys
+
+**Test 24 — `spec-updater.test.ts`（9 tests）** — findLatestSpec（不存在目录/无匹配/最新版本/slug 提取/多 feature）、update（新版本生成+保存/DSL 失败返回 null/spec 失败抛错/markdown fence 剥离）
+
+**Test 25 — `design-dialogue.test.ts`（7 tests）** — 选择选项/跳过返回 null/blend 模式/blend 失败/AI 失败/选项全文提取/400 字符截断
+
+**Test 26 — `constitution-consolidator.test.ts`（10 tests）** — checkConsolidationNeeded（阈值警告/低于阈值/自定义阈值）、consolidate（无文件抛错/低于阈值跳过/正常合并/dry-run 不写入/备份创建/fence 剥离/AI 失败抛错）
+
+**测试覆盖率提升：45% → 85.0%（18 → 35 个模块有测试，409 → 668 test cases）**
+
+### 依赖安全
+
+- 移除未使用的 `inquirer@8` 依赖（项目已使用 `@inquirer/prompts`），消除 lodash 传递依赖及 1 个 moderate 漏洞
+
+### 残留清理
+
+- 删除 `dist 2/`、`docs-assets 2/`、`cli/utils 2.ts` 残留文件/目录
+
+### 重构 — `create.ts` 拆分（1248 行 → 4 文件）
+
+将 1248 行的单体 `cli/commands/create.ts` 拆分为模块化 pipeline 目录：
+
+| 文件 | 职责 | 行数 |
+|------|------|------|
+| `cli/commands/create.ts` | CLI 注册 + 参数解析 + 分发 | ~85 |
+| `cli/pipeline/helpers.ts` | 共享类型 (`MultiRepoResult`) + `printBanner()` | ~35 |
+| `cli/pipeline/multi-repo.ts` | 多仓库编排 + 单仓库 workspace 子流水线 + auto-serve | ~490 |
+| `cli/pipeline/single-repo.ts` | 完整 12 阶段单仓库流水线（context→design→spec→DSL→codegen→review→eval） | ~480 |
+
+零行为变更，build + 520 tests 全部通过。
+
+### 重构 — `code-generator.ts` 拆分（991 行 → 676 行 + 2 模块）
+
+| 文件 | 职责 | 行数 |
+|------|------|------|
+| `core/code-generator.ts` | CodeGenerator 类 + 类型导出 | 676 |
+| `core/codegen/helpers.ts` | `extractBehavioralContract`、`buildGeneratedFilesSection`、`stripCodeFences`、`parseJsonArray`、`isRtkAvailable`、`FileAction` 类型 | ~200 |
+| `core/codegen/topo-sort.ts` | `topoSortLayerTasks`、`printTaskProgress`、`LAYER_ICONS` | ~95 |
+
+### 重构 — `mock-server-generator.ts` 拆分（782 行 → 333 行 + 2 模块）
+
+| 文件 | 职责 | 行数 |
+|------|------|------|
+| `core/mock-server-generator.ts` | Express/MSW 生成 + `generateMockAssets` + `findLatestDslFile` | 333 |
+| `core/mock/fixtures.ts` | `typeToFixture`、`buildFixtureObject`、`buildEndpointFixture` | ~89 |
+| `core/mock/proxy.ts` | 代理配置生成（Vite/Next/CRA/Webpack）+ `applyMockProxy`/`restoreMockProxy`/`startMockServerBackground`/`saveMockServerPid` | ~380 |
+
+两次拆分均通过 re-export 保持向后兼容，build + 668 tests 全部通过。
+
+---
+
 ## v0.37.0 — 2026-04-02 — P1 测试覆盖：Mock Server / Types Generator / VCR
 
 ### 新增测试（Phase 1 收尾）
