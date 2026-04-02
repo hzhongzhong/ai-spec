@@ -11,6 +11,8 @@ import {
   buildDslExtractionPrompt,
   buildDslRetryPrompt,
 } from "../prompts/dsl.prompt";
+import { estimateTokens, getDefaultBudget } from "./token-budget";
+import { parseJsonFromAiOutput } from "./safe-json";
 
 // ─── DSL Sanitizer ───────────────────────────────────────────────────────────
 
@@ -50,8 +52,8 @@ function sanitizeDsl(raw: unknown): unknown {
 /** Maximum AI attempts (1 initial + up to this many retries). */
 const MAX_RETRIES = 2;
 
-/** Maximum spec length passed to AI to avoid token/context blow-up. */
-const MAX_SPEC_CHARS = 12_000;
+/** Default maximum spec length passed to AI. Overridden by token budget when provider is known. */
+const DEFAULT_MAX_SPEC_CHARS = 12_000;
 
 // ─── DSL file naming ──────────────────────────────────────────────────────────
 
@@ -63,45 +65,8 @@ export function dslFilePath(specFilePath: string): string {
 
 // ─── Parser ───────────────────────────────────────────────────────────────────
 
-/**
- * Parse JSON from raw AI output.
- * Handles two cases:
- *   1. Bare JSON object starting with `{`
- *   2. JSON wrapped in a ```json ... ``` fence (model sometimes ignores instructions)
- *
- * Does NOT use eval or Function() — only JSON.parse().
- */
-function parseJsonFromOutput(raw: string): unknown {
-  const trimmed = raw.trim();
-
-  // Case 1: bare JSON
-  if (trimmed.startsWith("{")) {
-    return JSON.parse(trimmed);
-  }
-
-  // Case 2: fenced JSON  — extract content between first ``` and last ```
-  const fenceStart = trimmed.indexOf("```");
-  if (fenceStart !== -1) {
-    const afterFence = trimmed.slice(fenceStart + 3);
-    // Skip optional language tag (e.g. "json\n")
-    const newlinePos = afterFence.indexOf("\n");
-    const jsonStart = newlinePos !== -1 ? newlinePos + 1 : 0;
-    const fenceEnd = afterFence.lastIndexOf("```");
-    if (fenceEnd > jsonStart) {
-      const jsonStr = afterFence.slice(jsonStart, fenceEnd).trim();
-      return JSON.parse(jsonStr);
-    }
-  }
-
-  // Case 3: try to find the first `{` and last `}` pair
-  const objStart = trimmed.indexOf("{");
-  const objEnd = trimmed.lastIndexOf("}");
-  if (objStart !== -1 && objEnd > objStart) {
-    return JSON.parse(trimmed.slice(objStart, objEnd + 1));
-  }
-
-  throw new SyntaxError("No JSON object found in AI output");
-}
+// Uses shared parseJsonFromAiOutput from safe-json.ts
+const parseJsonFromOutput = parseJsonFromAiOutput;
 
 // ─── DslExtractor ────────────────────────────────────────────────────────────
 
@@ -125,12 +90,20 @@ export class DslExtractor {
     specContent: string,
     opts: { auto?: boolean; isFrontend?: boolean } = {}
   ): Promise<SpecDSL | null> {
+    // Compute dynamic spec char limit based on provider's token budget.
+    // Reserve ~30% of budget for DSL extraction prompt + response; use 70% for spec content.
+    const providerBudget = getDefaultBudget(this.provider.providerName);
+    const maxSpecChars = Math.max(
+      DEFAULT_MAX_SPEC_CHARS,
+      Math.floor(providerBudget * 0.7 * 3) // ~3 chars per token, 70% of budget
+    );
+
     // Truncate very long specs to avoid token issues
     const specForAI =
-      specContent.length > MAX_SPEC_CHARS
+      specContent.length > maxSpecChars
         ? (() => {
-            console.log(chalk.yellow(`  ⚠ Spec is ${specContent.length} chars — truncating to ${MAX_SPEC_CHARS} for DSL extraction. Details at the end may be lost.`));
-            return specContent.slice(0, MAX_SPEC_CHARS) + "\n... (truncated for DSL extraction)";
+            console.log(chalk.yellow(`  ⚠ Spec is ${specContent.length} chars — truncating to ${maxSpecChars} for DSL extraction (${this.provider.providerName} budget: ${Math.round(providerBudget / 1000)}K tokens).`));
+            return specContent.slice(0, maxSpecChars) + "\n... (truncated for DSL extraction)";
           })()
         : specContent;
 
@@ -170,8 +143,8 @@ export class DslExtractor {
         console.log(chalk.red(`  ✘ Failed to parse JSON from AI output: ${(parseErr as Error).message}`));
         const preview = rawOutput.slice(0, 500).replace(/\n/g, "\\n");
         console.log(chalk.gray(`  AI output preview (first 500 chars): ${preview}`));
-        if (rawOutput.length > MAX_SPEC_CHARS) {
-          console.log(chalk.gray(`  Note: spec was truncated to ${MAX_SPEC_CHARS} chars — long specs may lose context`));
+        if (rawOutput.length > maxSpecChars) {
+          console.log(chalk.gray(`  Note: spec was truncated to ${maxSpecChars} chars — long specs may lose context`));
         }
         lastErrors = [{ path: "root", message: "Output is not valid JSON — see raw output above" }];
 

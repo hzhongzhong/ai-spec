@@ -10,7 +10,7 @@ import { getActiveSnapshot } from "./run-snapshot";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
-interface ErrorEntry {
+export interface ErrorEntry {
   source: "test" | "lint" | "build";
   message: string;
   file?: string;
@@ -60,7 +60,7 @@ function runCommand(cmd: string, cwd: string): { success: boolean; output: strin
  * Detect TypeScript type-check command for the given directory.
  * Returns null for non-TS projects or projects without tsconfig.
  */
-function detectBuildCommand(workingDir: string): string | null {
+export function detectBuildCommand(workingDir: string): string | null {
   // Only applies to Node.js / frontend TypeScript projects
   if (!fs.existsSync(path.join(workingDir, "tsconfig.json"))) return null;
 
@@ -80,7 +80,7 @@ function detectBuildCommand(workingDir: string): string | null {
   return "npx tsc --noEmit";
 }
 
-function detectTestCommand(workingDir: string): string | null {
+export function detectTestCommand(workingDir: string): string | null {
   // ── Go ──────────────────────────────────────────────────────────────────────
   if (fs.existsSync(path.join(workingDir, "go.mod"))) return "go test ./...";
 
@@ -129,7 +129,7 @@ function detectTestCommand(workingDir: string): string | null {
   return null;
 }
 
-function detectLintCommand(workingDir: string): string | null {
+export function detectLintCommand(workingDir: string): string | null {
   // ── Go ──────────────────────────────────────────────────────────────────────
   if (fs.existsSync(path.join(workingDir, "go.mod"))) {
     // golangci-lint is optional; fall back to go vet
@@ -183,7 +183,7 @@ function detectLintCommand(workingDir: string): string | null {
   return null;
 }
 
-function parseErrors(output: string, source: ErrorEntry["source"]): ErrorEntry[] {
+export function parseErrors(output: string, source: ErrorEntry["source"]): ErrorEntry[] {
   const errors: ErrorEntry[] = [];
   if (!output.trim()) return errors;
 
@@ -226,7 +226,7 @@ function parseErrors(output: string, source: ErrorEntry["source"]): ErrorEntry[]
  * Returns paths normalized to project-root-relative form (no extension).
  * Only considers relative imports (./foo, ../foo) — skips aliases and node_modules.
  */
-function parseRelativeImports(content: string, fromFileRel: string): string[] {
+export function parseRelativeImports(content: string, fromFileRel: string): string[] {
   const relDir = path.dirname(fromFileRel);
   const results: string[] = [];
 
@@ -253,7 +253,7 @@ function parseRelativeImports(content: string, fromFileRel: string): string[] {
  * Example: if A exports a type used by B and C, fix A first so cycle 1 can cascade correctly.
  * Uses Kahn's topological sort; cycles are appended at the end (unavoidable, fix last).
  */
-async function buildRepairOrder(
+export async function buildRepairOrder(
   errorsByFile: Map<string, ErrorEntry[]>,
   workingDir: string
 ): Promise<[string, ErrorEntry[]][]> {
@@ -385,6 +385,63 @@ Output ONLY the complete fixed file content. No markdown fences, no explanations
   return results;
 }
 
+// ─── Test Existence Validation ──────────────────────────────────────────────────
+
+/** Patterns that indicate a file contains actual test cases (language-agnostic). */
+const TEST_PATTERNS = [
+  /\bdescribe\s*\(/,       // JS/TS (vitest, jest, mocha)
+  /\bit\s*\(/,             // JS/TS
+  /\btest\s*\(/,           // JS/TS
+  /\bfunc\s+Test\w*\s*\(/, // Go
+  /\bdef\s+test_/,         // Python
+  /@Test\b/,               // Java (JUnit)
+  /#\[test\]/,             // Rust
+];
+
+export interface TestValidationResult {
+  valid: boolean;
+  fileCount: number;
+  reason?: string;
+}
+
+/**
+ * Check that generated test files exist on disk and contain actual test cases.
+ * Prevents false-positive "tests pass" when no tests were generated.
+ */
+export function validateTestFilesExist(
+  workingDir: string,
+  generatedTestFiles: string[]
+): TestValidationResult {
+  if (generatedTestFiles.length === 0) {
+    return { valid: false, fileCount: 0, reason: "No test files were generated" };
+  }
+
+  let validCount = 0;
+  for (const relPath of generatedTestFiles) {
+    const absPath = path.join(workingDir, relPath);
+    if (!fs.existsSync(absPath)) continue;
+
+    try {
+      const content = fs.readFileSync(absPath, "utf-8");
+      if (TEST_PATTERNS.some((p) => p.test(content))) {
+        validCount++;
+      }
+    } catch {
+      // unreadable — skip
+    }
+  }
+
+  if (validCount === 0) {
+    return {
+      valid: false,
+      fileCount: generatedTestFiles.length,
+      reason: `${generatedTestFiles.length} test file(s) listed but none contain actual test cases`,
+    };
+  }
+
+  return { valid: true, fileCount: validCount };
+}
+
 // ─── Public API ─────────────────────────────────────────────────────────────────
 
 export interface ErrorFeedbackOptions {
@@ -396,6 +453,8 @@ export interface ErrorFeedbackOptions {
   skipLint?: boolean;
   /** Whether to skip TypeScript type-check (tsc --noEmit / vue-tsc --noEmit) */
   skipBuild?: boolean;
+  /** List of generated test files — used to validate tests actually exist */
+  generatedTestFiles?: string[];
 }
 
 /**
@@ -419,6 +478,19 @@ export async function runErrorFeedback(
   if (!testCmd && !lintCmd && !buildCmd) {
     console.log(chalk.gray("  No test / lint / type-check commands detected. Skipping error feedback."));
     return true;
+  }
+
+  // ── Pre-check: validate generated test files actually exist ──────────────
+  let testsValidated = true;
+  if (testCmd && opts.generatedTestFiles) {
+    const testValidation = validateTestFilesExist(workingDir, opts.generatedTestFiles);
+    if (!testValidation.valid) {
+      console.log(chalk.yellow(`  ⚠ Test validation: ${testValidation.reason}`));
+      console.log(chalk.yellow("    Test results will be treated as unvalidated (not as 'pass')."));
+      testsValidated = false;
+    } else {
+      console.log(chalk.gray(`  Test validation: ${testValidation.fileCount} valid test file(s) found.`));
+    }
   }
 
   if (buildCmd) console.log(chalk.gray(`  Type-check: ${buildCmd}`));
@@ -489,16 +561,28 @@ export async function runErrorFeedback(
     }
 
     if (allErrors.length === 0) {
+      if (!testsValidated) {
+        console.log(chalk.yellow(`\n  ⚠ Build/lint passed but tests were not validated (no test files with actual test cases).`));
+        return true; // don't block pipeline, but the warning is logged
+      }
       console.log(chalk.green(`\n  ✔ All checks passed after ${cycle} cycle(s).`));
       return true;
     }
 
-    // Circuit breaker: if the fix cycle made no progress (error count did not
-    // decrease), stop immediately rather than spending another AI cycle.
-    if (allErrors.length >= prevErrorCount) {
+    // Circuit breaker: stop if error count didn't decrease or is increasing.
+    if (allErrors.length > prevErrorCount) {
+      console.log(
+        chalk.red(
+          `\n  ✘ Auto-fix caused regression (${prevErrorCount} → ${allErrors.length} errors). Stopping immediately.`
+        )
+      );
+      console.log(chalk.gray("    The fix attempt introduced new errors. Manual intervention needed."));
+      return false;
+    }
+    if (allErrors.length === prevErrorCount) {
       console.log(
         chalk.yellow(
-          `\n  ⚠ Auto-fix made no progress (${allErrors.length} error(s) before and after). Stopping early.`
+          `\n  ⚠ Auto-fix made no progress (${allErrors.length} error(s) remain). Stopping early.`
         )
       );
       console.log(chalk.gray("    Manual intervention needed."));

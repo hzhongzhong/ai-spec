@@ -4,6 +4,7 @@ import * as path from "path";
 import { AIProvider } from "./spec-generator";
 import { CONSTITUTION_FILE } from "./constitution-generator";
 import { parseConstitutionStats } from "../prompts/consolidate.prompt";
+import { ConstitutionConsolidator } from "./constitution-consolidator";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -222,4 +223,55 @@ export async function accumulateReviewKnowledge(
   }
 
   await appendLessonsToConstitution(projectRoot, issues);
+}
+
+// ─── Auto-Consolidation ──────────────────────────────────────────────────────
+
+const DEFAULT_AUTO_CONSOLIDATE_THRESHOLD = 12;
+
+/**
+ * Check if §9 has grown past the threshold and auto-consolidate if so.
+ * Non-blocking, creates backups, uses the same ConstitutionConsolidator.
+ * Returns true if consolidation was performed.
+ */
+export async function maybeAutoConsolidate(
+  provider: AIProvider,
+  projectRoot: string,
+  opts: { threshold?: number } = {}
+): Promise<boolean> {
+  const threshold = opts.threshold ?? DEFAULT_AUTO_CONSOLIDATE_THRESHOLD;
+  const constitutionPath = path.join(projectRoot, CONSTITUTION_FILE);
+
+  let content: string;
+  try {
+    content = await fs.readFile(constitutionPath, "utf-8");
+  } catch {
+    return false;
+  }
+
+  const stats = parseConstitutionStats(content);
+  if (stats.lessonCount < threshold) return false;
+
+  console.log(
+    chalk.cyan(
+      `  §9 has ${stats.lessonCount} lessons (threshold: ${threshold}) — auto-consolidating...`
+    )
+  );
+
+  try {
+    const consolidator = new ConstitutionConsolidator(provider);
+    const result = await consolidator.consolidate(projectRoot, { minLessons: threshold });
+    if (result.written) {
+      console.log(
+        chalk.green(
+          `  ✔ Auto-consolidated: ${result.before.lessonCount} → ${result.after!.lessonCount} lessons. Backup: ${result.backupPath}`
+        )
+      );
+      return true;
+    }
+  } catch (err) {
+    console.log(chalk.yellow(`  ⚠ Auto-consolidation failed: ${(err as Error).message}`));
+  }
+
+  return false;
 }
