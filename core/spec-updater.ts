@@ -15,6 +15,7 @@ import {
   buildAffectedFilesPrompt,
 } from "../prompts/update.prompt";
 import { getCodeGenSystemPrompt } from "../prompts/codegen.prompt";
+import { parseJsonFromAiOutput } from "./safe-json";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,27 +45,10 @@ export interface SpecUpdaterOptions {
   repoType?: string;
 }
 
-// ─── JSON parser (same pattern as requirement-decomposer.ts) ─────────────────
+// ─── JSON Parser ─────────────────────────────────────────────────────────────
 
-function parseJsonFromOutput(raw: string): unknown {
-  const trimmed = raw.trim();
-  if (trimmed.startsWith("{")) return JSON.parse(trimmed);
-  const fenceStart = trimmed.indexOf("```");
-  if (fenceStart !== -1) {
-    const afterFence = trimmed.slice(fenceStart + 3);
-    const newlinePos = afterFence.indexOf("\n");
-    const jsonStart = newlinePos !== -1 ? newlinePos + 1 : 0;
-    const fenceEnd = afterFence.lastIndexOf("```");
-    if (fenceEnd > jsonStart) return JSON.parse(afterFence.slice(jsonStart, fenceEnd).trim());
-  }
-  const objStart = trimmed.indexOf("{");
-  const arrStart = trimmed.indexOf("[");
-  const start = objStart !== -1 && (arrStart === -1 || objStart < arrStart) ? objStart : arrStart;
-  const isObj = start === objStart && objStart !== -1;
-  const end = isObj ? trimmed.lastIndexOf("}") : trimmed.lastIndexOf("]");
-  if (start !== -1 && end > start) return JSON.parse(trimmed.slice(start, end + 1));
-  throw new SyntaxError("No JSON found in output");
-}
+// Uses shared parseJsonFromAiOutput from safe-json.ts
+const parseJsonFromOutput = parseJsonFromAiOutput;
 
 function parseAffectedFiles(raw: string): AffectedFile[] {
   try {

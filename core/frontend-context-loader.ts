@@ -4,7 +4,10 @@ import { glob } from "glob";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type FrontendFramework = "react" | "next" | "vue" | "react-native" | "unknown";
+export type FrontendFramework =
+  | "react" | "next" | "vue" | "react-native"
+  | "svelte" | "sveltekit" | "solid" | "qwik" | "remix" | "astro"
+  | "unknown";
 
 export interface FrontendContext {
   framework: FrontendFramework;
@@ -88,7 +91,7 @@ interface ImportStatement {
  *  - Returns structured objects so callers can inspect specifiers vs module path
  *    without re-running a second regex
  */
-function parseImportStatements(content: string): ImportStatement[] {
+export function parseImportStatements(content: string): ImportStatement[] {
   // 1. Strip block comments (/* ... */) to avoid matching imports inside comments
   const stripped = content.replace(/\/\*[\s\S]*?\*\//g, (m) => "\n".repeat(m.split("\n").length - 1));
 
@@ -137,7 +140,7 @@ const HTTP_MODULE_PATTERNS: RegExp[] = [
  *  - Module-path matching is done on the resolved path string, not the full line,
  *    so a long specifier list doesn't prevent a match
  */
-function findHttpClientImport(content: string): string | undefined {
+export function findHttpClientImport(content: string): string | undefined {
   for (const stmt of parseImportStatements(content)) {
     if (HTTP_MODULE_PATTERNS.some((p) => p.test(stmt.modulePath))) {
       return stmt.line;
@@ -190,6 +193,8 @@ const ROUTING_LIBS: Array<[string, string]> = [
   ["react-navigation", "react-navigation"],
   ["expo-router", "expo-router"],
   ["vue-router", "vue-router"],
+  ["@solidjs/router", "solid-router"],
+  ["@builder.io/qwik-city", "qwik-city"],
 ];
 
 // ─── Main function ─────────────────────────────────────────────────────────────
@@ -231,9 +236,21 @@ export async function loadFrontendContext(
     const depKeys = Object.keys(allDeps);
     const has = (name: string) => depKeys.includes(name);
 
-    // Framework
+    // Framework (order matters: more specific before generic)
     if (has("react-native") || has("expo")) {
       ctx.framework = "react-native";
+    } else if (has("@sveltejs/kit")) {
+      ctx.framework = "sveltekit";
+    } else if (has("svelte")) {
+      ctx.framework = "svelte";
+    } else if (has("@builder.io/qwik")) {
+      ctx.framework = "qwik";
+    } else if (has("@remix-run/react") || has("@remix-run/node")) {
+      ctx.framework = "remix";
+    } else if (has("astro")) {
+      ctx.framework = "astro";
+    } else if (has("solid-js")) {
+      ctx.framework = "solid";
     } else if (has("next")) {
       ctx.framework = "next";
     } else if (has("react")) {
@@ -266,9 +283,14 @@ export async function loadFrontendContext(
 
     // Routing
     if (ctx.framework === "next") {
-      // Detect app router vs pages router
       const hasAppDir = await fs.pathExists(path.join(projectRoot, "app"));
       ctx.routingPattern = hasAppDir ? "next-app-router" : "next-pages-router";
+    } else if (ctx.framework === "sveltekit") {
+      ctx.routingPattern = "sveltekit-file-router";
+    } else if (ctx.framework === "remix") {
+      ctx.routingPattern = "remix-file-router";
+    } else if (ctx.framework === "astro") {
+      ctx.routingPattern = "astro-file-router";
     } else {
       for (const [lib, label] of ROUTING_LIBS) {
         if (has(lib)) {

@@ -53,7 +53,7 @@ export function registerDashboard(program: Command): void {
               : process.platform === "win32"
               ? `start "" "${outputPath}"`
               : `xdg-open "${outputPath}"`;
-          execSync(cmd);
+          execSync(cmd, { timeout: 10_000 });
         } catch {
           // Non-fatal — file was already written
         }

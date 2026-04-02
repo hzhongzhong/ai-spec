@@ -141,13 +141,14 @@ export class VcrRecordingProvider implements AIProvider {
  */
 export class VcrReplayProvider implements AIProvider {
   private index = 0;
+  private _mismatches: Array<{ index: number; expected: string; actual: string }> = [];
 
   constructor(private readonly recording: VcrRecording) {}
 
   get providerName() { return "vcr-replay"; }
   get modelName()    { return this.recording.runId; }
 
-  async generate(_prompt: string, _systemInstruction?: string): Promise<string> {
+  async generate(prompt: string, systemInstruction?: string): Promise<string> {
     const entry = this.recording.entries[this.index++];
     if (!entry) {
       throw new Error(
@@ -155,11 +156,29 @@ export class VcrReplayProvider implements AIProvider {
         `responses have been consumed. The pipeline made more AI calls than the recording has.`
       );
     }
+
+    // Validate prompt hash to detect pipeline drift
+    const actualHash = createHash("sha256")
+      .update(prompt + "\x00" + (systemInstruction ?? ""))
+      .digest("hex")
+      .slice(0, 8);
+    if (actualHash !== entry.callHash) {
+      this._mismatches.push({
+        index: entry.index,
+        expected: entry.callHash,
+        actual: actualHash,
+      });
+    }
+
     return entry.response;
   }
 
   get remaining() { return this.recording.entries.length - this.index; }
   get consumed()  { return this.index; }
+
+  /** Returns prompt hash mismatches detected during replay. */
+  get mismatches() { return this._mismatches; }
+  get hasMismatches() { return this._mismatches.length > 0; }
 }
 
 // ─── Loader helpers ───────────────────────────────────────────────────────────

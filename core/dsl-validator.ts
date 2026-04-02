@@ -119,6 +119,9 @@ export function validateDsl(raw: unknown): DslValidationResult {
     }
   }
 
+  // ── Cross-reference checks ──────────────────────────────────────────────
+  crossReferenceChecks(obj, errors);
+
   if (errors.length > 0) {
     return { valid: false, errors };
   }
@@ -424,6 +427,77 @@ function validateComponent(
   if (c["apiCalls"] !== undefined) {
     if (!Array.isArray(c["apiCalls"])) {
       errors.push({ path: `${path}.apiCalls`, message: "Must be an array of strings if present" });
+    }
+  }
+}
+
+// ─── Cross-reference checks ──────────────────────────────────────────────────
+
+function crossReferenceChecks(
+  obj: Record<string, unknown>,
+  errors: DslValidationError[]
+): void {
+  const models = Array.isArray(obj["models"]) ? (obj["models"] as Record<string, unknown>[]) : [];
+  const endpoints = Array.isArray(obj["endpoints"]) ? (obj["endpoints"] as Record<string, unknown>[]) : [];
+  const components = Array.isArray(obj["components"]) ? (obj["components"] as Record<string, unknown>[]) : [];
+
+  // 1. Duplicate path+method detection
+  const seenRoutes = new Map<string, number>();
+  for (let i = 0; i < endpoints.length; i++) {
+    const ep = endpoints[i];
+    if (typeof ep?.["method"] === "string" && typeof ep?.["path"] === "string") {
+      const route = `${(ep["method"] as string).toUpperCase()} ${ep["path"]}`;
+      if (seenRoutes.has(route)) {
+        errors.push({
+          path: `endpoints[${i}]`,
+          message: `Duplicate route "${route}" — also defined at endpoints[${seenRoutes.get(route)}]`,
+        });
+      } else {
+        seenRoutes.set(route, i);
+      }
+    }
+  }
+
+  // 2. Model relations reference existing model names
+  const modelNames = new Set(
+    models.filter((m) => typeof m?.["name"] === "string").map((m) => m["name"] as string)
+  );
+  for (let i = 0; i < models.length; i++) {
+    const m = models[i];
+    if (!Array.isArray(m?.["relations"])) continue;
+    for (const rel of m["relations"] as string[]) {
+      if (typeof rel !== "string") continue;
+      // Extract referenced model name: "User hasMany Post" → "Post", "belongsTo Category" → "Category"
+      const refMatch = rel.match(/(?:hasMany|hasOne|belongsTo|manyToMany)\s+(\w+)/i);
+      if (refMatch) {
+        const refName = refMatch[1];
+        if (!modelNames.has(refName)) {
+          errors.push({
+            path: `models[${i}].relations`,
+            message: `Relation references model "${refName}" which is not defined in models[]`,
+          });
+        }
+      }
+    }
+  }
+
+  // 3. Component apiCalls reference existing endpoint IDs
+  const endpointIds = new Set(
+    endpoints.filter((e) => typeof e?.["id"] === "string").map((e) => e["id"] as string)
+  );
+  if (endpointIds.size > 0) {
+    for (let i = 0; i < components.length; i++) {
+      const c = components[i];
+      if (!Array.isArray(c?.["apiCalls"])) continue;
+      for (const call of c["apiCalls"] as string[]) {
+        if (typeof call !== "string") continue;
+        if (!endpointIds.has(call)) {
+          errors.push({
+            path: `components[${i}].apiCalls`,
+            message: `References endpoint "${call}" which is not defined in endpoints[]`,
+          });
+        }
+      }
     }
   }
 }

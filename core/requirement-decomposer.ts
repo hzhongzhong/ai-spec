@@ -3,6 +3,7 @@ import { WorkspaceConfig, RepoRole } from "./workspace-loader";
 import { ProjectContext } from "./context-loader";
 import { FrontendContext } from "./frontend-context-loader";
 import { decomposeSystemPrompt, buildDecomposePrompt } from "../prompts/decompose.prompt";
+import { parseJsonFromAiOutput } from "./safe-json";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,35 +46,10 @@ export interface DecompositionResult {
   coordinationNotes: string;
 }
 
-// ─── JSON Parser (same approach as dsl-extractor.ts) ─────────────────────────
+// ─── JSON Parser ─────────────────────────────────────────────────────────────
 
-function parseJsonFromOutput(raw: string): unknown {
-  const trimmed = raw.trim();
-
-  if (trimmed.startsWith("{")) {
-    return JSON.parse(trimmed);
-  }
-
-  const fenceStart = trimmed.indexOf("```");
-  if (fenceStart !== -1) {
-    const afterFence = trimmed.slice(fenceStart + 3);
-    const newlinePos = afterFence.indexOf("\n");
-    const jsonStart = newlinePos !== -1 ? newlinePos + 1 : 0;
-    const fenceEnd = afterFence.lastIndexOf("```");
-    if (fenceEnd > jsonStart) {
-      const jsonStr = afterFence.slice(jsonStart, fenceEnd).trim();
-      return JSON.parse(jsonStr);
-    }
-  }
-
-  const objStart = trimmed.indexOf("{");
-  const objEnd = trimmed.lastIndexOf("}");
-  if (objStart !== -1 && objEnd > objStart) {
-    return JSON.parse(trimmed.slice(objStart, objEnd + 1));
-  }
-
-  throw new SyntaxError("No JSON object found in AI output");
-}
+// Uses shared parseJsonFromAiOutput from safe-json.ts
+const parseJsonFromOutput = parseJsonFromAiOutput;
 
 // ─── Validator ────────────────────────────────────────────────────────────────
 

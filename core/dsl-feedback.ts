@@ -21,7 +21,7 @@ import { SpecDSL } from "./dsl-types";
 
 export interface DslGap {
   /** Short machine key for RunLog serialisation */
-  code: "sparse_model" | "missing_errors" | "generic_endpoint_desc" | "no_models_no_endpoints";
+  code: "sparse_model" | "missing_errors" | "generic_endpoint_desc" | "no_models_no_endpoints" | "uncovered_requirement";
   /** Human-readable message shown to the user */
   message: string;
   /** Concrete suggestion injected into the refinement prompt */
