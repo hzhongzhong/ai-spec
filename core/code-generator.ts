@@ -10,241 +10,24 @@ import { loadDslForSpec, buildDslContextSection } from "./dsl-extractor";
 import { loadFrontendContext, buildFrontendContextSection } from "./frontend-context-loader";
 import { getActiveSnapshot } from "./run-snapshot";
 import { getActiveLogger } from "./run-logger";
+import {
+  buildSharedConfigSection,
+  buildInstalledPackagesSection,
+  buildGeneratedFilesSection,
+  extractBehavioralContract,
+  stripCodeFences,
+  parseJsonArray,
+  isRtkAvailable,
+  FileAction,
+} from "./codegen/helpers";
+import { topoSortLayerTasks, printTaskProgress, LAYER_ICONS } from "./codegen/topo-sort";
+import { estimateTokens, getDefaultBudget } from "./token-budget";
 
-// ─── Shared Config Helper ───────────────────────────────────────────────────
-
-function buildSharedConfigSection(context?: ProjectContext): string {
-  if (!context?.sharedConfigFiles || context.sharedConfigFiles.length === 0) return "";
-
-  const lines: string[] = [
-    "\n=== Existing Shared Config Files (study these to learn project conventions) ===",
-    "These are real files from the project. Use them as ground truth for naming, structure, and registration patterns.",
-    "Modify them in-place when adding new entries. Do NOT create parallel files for the same purpose.\n",
-  ];
-
-  for (const f of context.sharedConfigFiles) {
-    lines.push(`--- File: ${f.path}  [${f.category}] ---`);
-    lines.push(f.preview);
-    lines.push("");
-  }
-  return lines.join("\n") + "\n";
-}
-
-function buildInstalledPackagesSection(context?: ProjectContext): string {
-  if (!context?.dependencies || context.dependencies.length === 0) return "";
-  return `\n=== Installed Packages (ONLY use packages from this list — NEVER import anything not listed here) ===\n${context.dependencies.join(", ")}\n`;
-}
-
-/**
- * Extract a behavioral contract summary from a generated file.
- *
- * Captures:
- * - export interface / type / enum — full multi-line blocks (the actual TS contracts)
- * - export function / const / class — opening signature line
- * - Throw statements — error codes & validation constraints
- *
- * Multi-line blocks (interface, type alias with {}) are captured in full so
- * downstream tasks see complete method signatures and field shapes, not just
- * a single-line "export interface Foo {" that conveys nothing.
- *
- * Falls back to first 3000 chars for CommonJS files with no explicit exports.
- */
-export function extractBehavioralContract(content: string): string {
-  const lines = content.split("\n");
-  const contractLines: string[] = [];
-  const throwLines: string[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-    const trimmed = line.trim();
-
-    // ── Multi-line block exports: interface / type X = { / class / enum ──────
-    // Capture the full block so downstream tasks see the complete contract.
-    if (/^export\s+(interface|type|class|abstract\s+class|enum)\s/.test(trimmed)) {
-      contractLines.push(line.trimEnd());
-      if (trimmed.includes("{")) {
-        let depth =
-          (trimmed.match(/\{/g) ?? []).length -
-          (trimmed.match(/\}/g) ?? []).length;
-        i++;
-        while (i < lines.length && depth > 0) {
-          const inner = lines[i];
-          contractLines.push(inner.trimEnd());
-          depth += (inner.match(/\{/g) ?? []).length;
-          depth -= (inner.match(/\}/g) ?? []).length;
-          i++;
-        }
-      } else {
-        i++;
-      }
-      continue;
-    }
-
-    // ── export const X = defineStore(...) — capture full block ───────────────
-    // Pinia stores wrap all actions inside defineStore(). Without the full block
-    // the consumer only sees "export const useTaskStore = defineStore(" and has
-    // to guess every action name — the primary source of fetchTasks→fetchTaskList
-    // hallucinations. Capture the complete defineStore(...) call so the return
-    // object (public API) is visible.
-    if (/^export\s+const\s+\w+\s*=\s*(defineStore|createStore|createSlice)\s*\(/.test(trimmed)) {
-      contractLines.push(line.trimEnd());
-      let depth = (trimmed.match(/\(/g) ?? []).length - (trimmed.match(/\)/g) ?? []).length;
-      i++;
-      while (i < lines.length && depth > 0) {
-        const inner = lines[i];
-        contractLines.push(inner.trimEnd());
-        depth += (inner.match(/\(/g) ?? []).length;
-        depth -= (inner.match(/\)/g) ?? []).length;
-        i++;
-      }
-      continue;
-    }
-
-    // ── return { ... } — composable/store public API surface ─────────────────
-    // In Pinia composition-API stores and Vue composables the return object is
-    // the definitive list of exposed names. Capture it so consumers see the
-    // exact exported identifiers (e.g. "fetchTasks" not "fetchTaskList").
-    if (/^return\s*\{/.test(trimmed)) {
-      contractLines.push("// public API (return object):");
-      contractLines.push(line.trimEnd());
-      let depth = (trimmed.match(/\{/g) ?? []).length - (trimmed.match(/\}/g) ?? []).length;
-      i++;
-      while (i < lines.length && depth > 0) {
-        const inner = lines[i];
-        contractLines.push(inner.trimEnd());
-        depth += (inner.match(/\{/g) ?? []).length;
-        depth -= (inner.match(/\}/g) ?? []).length;
-        i++;
-      }
-      continue;
-    }
-
-    // ── export default function/class — capture full block ───────────────────
-    // Needed for React components (export default function Foo()) and Vue
-    // composables (export default class Foo {}). Without full-block capture the
-    // consumer only sees the opening line and can't know the return shape.
-    if (/^export\s+default\s+(async\s+)?(function|class)\b/.test(trimmed)) {
-      contractLines.push(line.trimEnd());
-      if (trimmed.includes("{")) {
-        let depth =
-          (trimmed.match(/\{/g) ?? []).length -
-          (trimmed.match(/\}/g) ?? []).length;
-        i++;
-        while (i < lines.length && depth > 0) {
-          const inner = lines[i];
-          contractLines.push(inner.trimEnd());
-          depth += (inner.match(/\{/g) ?? []).length;
-          depth -= (inner.match(/\}/g) ?? []).length;
-          i++;
-        }
-      } else {
-        i++;
-      }
-      continue;
-    }
-
-    // ── Single-line export declarations (functions, consts, re-exports) ───────
-    if (/^export\s/.test(trimmed)) {
-      contractLines.push(line.trimEnd());
-    }
-
-    // ── Throw patterns — validation constraints and named error codes ─────────
-    if (
-      /throw\s+(new\s+)?\w*[Ee]rror\b|throw\s+create[A-Z]\w*|@throws/.test(line) &&
-      throwLines.length < 20
-    ) {
-      throwLines.push("  // " + trimmed);
-    }
-
-    i++;
-  }
-
-  if (contractLines.length === 0 && throwLines.length === 0) {
-    return content.slice(0, 3000);
-  }
-
-  const parts: string[] = [...contractLines];
-  if (throwLines.length > 0) {
-    parts.push("", "// Error contracts (throws / validation):", ...throwLines);
-  }
-  return parts.join("\n");
-}
-
-/**
- * Build a context section from files already written in this generation run.
- * Injected before generating files that may import from those paths (e.g., route files
- * importing from API files generated in an earlier task).
- */
-function buildGeneratedFilesSection(cache: Map<string, string>): string {
-  if (cache.size === 0) return "";
-  const lines = [
-    "\n=== Files Already Generated in This Run — USE EXACT EXPORTS (do not rename or invent alternatives) ===",
-    "// CRITICAL: function/action names and file paths below are ground truth. Copy them EXACTLY.",
-    "// Do NOT add suffixes (List, Data, All, Info) or change casing.",
-    "// For '// exists:' entries: use the EXACT filename shown — do NOT substitute index.vue or other defaults.",
-  ];
-  for (const [filePath, content] of cache) {
-    // View/page components: only show the path as a name sentinel.
-    // The router needs to know the exact filename (e.g. TaskManagement.vue, NOT index.vue).
-    const isViewFile = /src[\\/](views?|pages?)[\\/]/i.test(filePath);
-    if (isViewFile) {
-      lines.push(`\n// exists: ${filePath}`);
-      continue;
-    }
-    lines.push(`\n--- ${filePath} ---`);
-    // Store and composable files: pass full content — the entire file IS the contract
-    const isStoreOrComposable = /src[\\/](stores?|composables?)[\\/]/i.test(filePath);
-    lines.push(isStoreOrComposable ? content : extractBehavioralContract(content));
-  }
-  return lines.join("\n") + "\n";
-}
+// Re-export public symbols for backward compatibility
+export { extractBehavioralContract } from "./codegen/helpers";
+export { printTaskProgress } from "./codegen/topo-sort";
 
 export type CodeGenMode = "claude-code" | "api" | "plan";
-
-// ─── RTK Helper ────────────────────────────────────────────────────────────────
-// RTK (Rust Token Killer) saves tokens by filtering verbose CLI output.
-// When available, prefix 'claude' with 'rtk' for token savings.
-
-function isRtkAvailable(): boolean {
-  try {
-    execSync("rtk --version", { stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-interface FileAction {
-  file: string;
-  action: "create" | "modify";
-  description: string;
-}
-
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-
-function stripCodeFences(output: string): string {
-  // Remove ```lang ... ``` wrapping if present
-  const fenced = output.match(/^```(?:\w+)?\n([\s\S]*?)```\s*$/m);
-  if (fenced) return fenced[1].trim();
-  const lines = output.split("\n");
-  if (lines[0].startsWith("```")) lines.shift();
-  if (lines[lines.length - 1].trim() === "```") lines.pop();
-  return lines.join("\n").trim();
-}
-
-function parseJsonArray(text: string): FileAction[] {
-  // Try a JSON code fence first
-  const fenced = text.match(/```(?:json)?\n(\[[\s\S]*?\])\n```/);
-  const raw = fenced ? fenced[1] : text.match(/\[[\s\S]*?\]/)?.[0] ?? "";
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed as FileAction[];
-  } catch {
-    // fall through
-  }
-  return [];
-}
 
 // ─── CodeGenerator ────────────────────────────────────────────────────────────
 
@@ -301,7 +84,7 @@ export class CodeGenerator {
 
   private isClaudeCLIAvailable(): boolean {
     try {
-      execSync("claude --version", { stdio: "ignore" });
+      execSync("claude --version", { stdio: "ignore", timeout: 10_000 });
       return true;
     } catch {
       return false;
@@ -457,7 +240,7 @@ export class CodeGenerator {
     }
 
     const spec = await fs.readFile(specFilePath, "utf-8");
-    const constitutionSection = context?.constitution
+    let constitutionSection = context?.constitution
       ? `\n=== Project Constitution (MUST follow) ===\n${context.constitution}\n`
       : "";
     const contextSummary = context
@@ -482,6 +265,27 @@ export class CodeGenerator {
       const fctx = await loadFrontendContext(workingDir);
       frontendSection = `\n${buildFrontendContextSection(fctx)}\n`;
       console.log(chalk.gray(`  Frontend context: ${fctx.framework} / ${fctx.httpClient} | hooks:${fctx.hookFiles.length} stores:${fctx.storeFiles.length}`));
+    }
+
+    // Token budget check — warn if context sections are large
+    const allContextText = spec + constitutionSection + dslSection + frontendSection + installedPackagesSection + sharedConfigSection;
+    const estimatedTokenCount = estimateTokens(allContextText);
+    const budget = getDefaultBudget(this.provider.providerName);
+    if (estimatedTokenCount > budget * 0.7) {
+      console.log(
+        chalk.yellow(
+          `  ⚠ Context size: ~${Math.round(estimatedTokenCount / 1000)}K tokens (budget: ${Math.round(budget / 1000)}K for ${this.provider.providerName})`
+        )
+      );
+      // Trim constitution §9 if it's the largest contributor
+      if (constitutionSection.length > 4000) {
+        const s9Start = constitutionSection.indexOf("## 9.");
+        if (s9Start > 0) {
+          constitutionSection = constitutionSection.slice(0, s9Start) +
+            "## 9. 积累教训 (Accumulated Lessons)\n[Trimmed for context budget — run `ai-spec init --consolidate` to prune]\n";
+          console.log(chalk.gray("    → §9 trimmed from constitution to save tokens."));
+        }
+      }
     }
 
     // Use tasks if available for finer-grained generation with resume support
@@ -724,16 +528,19 @@ Output ONLY a valid JSON array:
 
       for (const batch of taskBatches) {
         const batchIsParallel = batch.length > 1;
-        // Wrap each task in .catch() so a single unexpected failure (disk full,
-        // provider timeout, mkdir error) degrades gracefully instead of rejecting
-        // the entire Promise.all and aborting all sibling tasks in the batch.
-        const batchResultPromises = batch.map((task) =>
-          executeTask(task, batchIsParallel).catch((err): TaskResult => {
-            console.log(chalk.yellow(`  ⚠ ${task.id} threw unexpectedly: ${(err as Error).message}`));
-            return { task, files: [], createdFiles: [], success: 0, total: 0, impliesRegistration: false };
-          })
-        );
-        const batchResults = await Promise.all(batchResultPromises);
+        const batchResultPromises = batch.map((task) => executeTask(task, batchIsParallel));
+        const settled = await Promise.allSettled(batchResultPromises);
+        const batchResults: TaskResult[] = [];
+        for (let i = 0; i < settled.length; i++) {
+          const outcome = settled[i];
+          if (outcome.status === "fulfilled") {
+            batchResults.push(outcome.value);
+          } else {
+            const task = batch[i];
+            console.log(chalk.yellow(`  ⚠ ${task.id} threw unexpectedly: ${outcome.reason?.message ?? outcome.reason}`));
+            batchResults.push({ task, files: [], createdFiles: [], success: 0, total: 0, impliesRegistration: false });
+          }
+        }
         layerResults.push(...batchResults);
         // Update cache after each batch so the next batch sees the exports.
         await updateCacheFromBatch(batchResults);
@@ -891,101 +698,5 @@ ${spec}`,
     );
 
     console.log(chalk.cyan("\n") + plan);
-  }
-}
-
-// ─── Topological Batch Sort ────────────────────────────────────────────────────
-
-/**
- * Partition tasks within a layer into ordered batches that respect the
- * `dependencies` field.  Tasks in the same batch have no intra-layer
- * dependencies on each other and can run in parallel.  Tasks in later batches
- * wait for earlier batches to complete.
- *
- * Only intra-layer dependencies (i.e. deps whose IDs also appear in `tasks`)
- * are considered — cross-layer ordering is already handled by LAYER_ORDER.
- *
- * Returns at least one batch.  On circular-dependency detection the remaining
- * tasks are dumped into a final batch so execution always completes.
- */
-function topoSortLayerTasks(tasks: SpecTask[]): SpecTask[][] {
-  if (tasks.length <= 1) return [tasks];
-
-  const idSet = new Set(tasks.map((t) => t.id));
-  const taskById = new Map(tasks.map((t) => [t.id, t]));
-  const inDegree = new Map<string, number>();
-  const dependents = new Map<string, string[]>(); // dep → tasks that depend on it
-
-  for (const task of tasks) {
-    inDegree.set(task.id, 0);
-    dependents.set(task.id, []);
-  }
-
-  for (const task of tasks) {
-    const intraDeps = task.dependencies.filter((dep) => idSet.has(dep));
-    inDegree.set(task.id, intraDeps.length);
-    for (const dep of intraDeps) {
-      dependents.get(dep)!.push(task.id);
-    }
-  }
-
-  const batches: SpecTask[][] = [];
-  const remaining = new Set(tasks.map((t) => t.id));
-
-  while (remaining.size > 0) {
-    const batch = [...remaining]
-      .filter((id) => inDegree.get(id) === 0)
-      .map((id) => taskById.get(id)!);
-
-    if (batch.length === 0) {
-      // Circular dependency — run all remaining tasks in parallel to avoid deadlock
-      batches.push([...remaining].map((id) => taskById.get(id)!));
-      break;
-    }
-
-    batches.push(batch);
-    for (const task of batch) {
-      remaining.delete(task.id);
-      for (const dependent of dependents.get(task.id)!) {
-        inDegree.set(dependent, inDegree.get(dependent)! - 1);
-      }
-    }
-  }
-
-  return batches;
-}
-
-// ─── Progress Bar Helper ───────────────────────────────────────────────────────
-
-const LAYER_ICONS: Record<string, string> = {
-  data: "💾",
-  infra: "⚙️ ",
-  service: "🔧",
-  api: "🌐",
-  view: "🖥️ ",
-  route: "🗺️ ",
-  test: "🧪",
-};
-
-export function printTaskProgress(
-  completed: number,
-  total: number,
-  task: SpecTask,
-  mode: "run" | "skip"
-): void {
-  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-  const barWidth = 20;
-  const filled = Math.round((pct / 100) * barWidth);
-  const bar = chalk.green("█".repeat(filled)) + chalk.gray("░".repeat(barWidth - filled));
-  const icon = LAYER_ICONS[task.layer] ?? "  ";
-
-  if (mode === "skip") {
-    console.log(
-      chalk.gray(`\n  [${bar}] ${pct}% ✓ ${task.id} ${icon} ${task.title} — already done`)
-    );
-  } else {
-    console.log(
-      chalk.bold(`\n  [${bar}] ${pct}% → ${task.id} ${icon} ${task.title}`)
-    );
   }
 }

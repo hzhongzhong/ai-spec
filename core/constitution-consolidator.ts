@@ -108,8 +108,8 @@ export class ConstitutionConsolidator {
     // ── Show diff ───────────────────────────────────────────────────────────
     const diff = computeDiff(original, consolidated);
     console.log(chalk.blue("\n  Changes preview:"));
-    printDiff(diff, 4);
-    printDiffSummary(diff);
+    printDiff(diff);
+    printDiffSummary(diff, "consolidation");
 
     console.log(chalk.cyan("\n  After consolidation:"));
     console.log(chalk.gray(`  Size    : ${after.totalLines} lines (was ${before.totalLines})`));

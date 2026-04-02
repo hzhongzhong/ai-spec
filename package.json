@@ -1,6 +1,6 @@
 {
   "name": "ai-spec-dev",
-  "version": "0.37.0",
+  "version": "0.41.0",
   "description": "AI-driven Development Orchestrator SDK & CLI",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,12 +27,12 @@
     "@google/generative-ai": "^0.21.0",
     "@inquirer/editor": "^5.0.10",
     "@inquirer/prompts": "^8.3.2",
+    "@rollup/rollup-darwin-arm64": "^4.60.1",
     "axios": "^1.13.6",
     "chalk": "^4.1.2",
     "commander": "^13.1.0",
     "dotenv": "^16.4.7",
     "fs-extra": "^11.3.0",
-    "inquirer": "^8.2.6",
     "openai": "^6.31.0",
     "undici": "^7.24.4"
   },

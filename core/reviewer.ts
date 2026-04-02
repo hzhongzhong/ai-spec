@@ -140,7 +140,7 @@ export class CodeReviewer {
 
   private getGitDiff(): string {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const silent: any = { encoding: "utf-8", stdio: "pipe" };
+    const silent: any = { encoding: "utf-8", stdio: "pipe", cwd: this.projectRoot, timeout: 30_000 };
     try {
       execSync("git rev-parse --is-inside-work-tree", silent);
     } catch {

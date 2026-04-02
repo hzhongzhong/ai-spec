@@ -20,6 +20,8 @@ export interface AiSpecConfig {
   minHarnessScore?: number;
   /** Maximum error-feedback cycles before giving up (default: 2, TDD default: 3). */
   maxErrorCycles?: number;
+  /** §9 lesson count threshold for auto-consolidation (default: 12). */
+  autoConsolidateThreshold?: number;
 }
 
 export const CONFIG_FILE = ".ai-spec.json";

@@ -8,6 +8,7 @@ import type { AIProvider } from "../core/spec-generator";
 import * as fs from "fs-extra";
 import * as path from "path";
 import * as os from "os";
+import { execSync } from "child_process";
 
 // ─── extractComplianceScore ──────────────────────────────────────────────────
 
@@ -103,9 +104,11 @@ describe("CodeReviewer", () => {
     };
   }
 
-  it("returns 'No changes' when git diff is empty (not a git repo)", async () => {
+  it("returns 'No changes' when git diff is empty (isolated git repo)", async () => {
     const provider = makeProvider("review result");
     const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    // Create an isolated git repo with no commits/diff
+    execSync("git init", { cwd: tmpDir, stdio: "pipe" });
     const reviewer = new CodeReviewer(provider, tmpDir);
     const result = await reviewer.reviewCode("spec content");
     expect(result).toBe("No changes");
