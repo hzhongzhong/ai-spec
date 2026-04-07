@@ -11,6 +11,9 @@ export interface FrontendApiCall {
   file: string;         // relative path from frontend root
   line: number;         // 1-indexed line number
   snippet: string;      // one-line source snippet
+  /** True when path was extracted from a string concatenation (e.g. '/api/' + id).
+   *  The path ends with /* to represent the unknown suffix — matching is approximate. */
+  isConcatPath?: boolean;
 }
 
 export interface CrossStackReport {
@@ -24,7 +27,12 @@ export interface CrossStackReport {
   methodMismatch: Array<{ call: FrontendApiCall; expectedMethod: string }>;
   /** Calls whose method+path both match the DSL */
   matched: Array<{ call: FrontendApiCall; endpointId: string }>;
+  /** Calls with UNKNOWN method (generic `request('/path')` helpers without a method arg).
+   *  These are counted as matched (permissive) but surfaced for visibility. */
+  unknownMethodCalls: FrontendApiCall[];
   totalScannedFiles: number;
+  /** True when there are phantom calls or method mismatches — use to fail CI / pipeline steps. */
+  hasViolations: boolean;
 }
 
 // ─── File scanning ────────────────────────────────────────────────────────────
@@ -92,8 +100,9 @@ export function extractApiCallsFromSource(
 
   // Pattern 1: .get('/path') / .post('/path') / .delete('/path') / .put('/path') / .patch('/path')
   // Matches things like: axios.get('/api/users'), api.post(`/api/users/${id}`)
+  // Negative lookahead (?!\s*\+) ensures we don't match string concatenation (handled by Pattern 5).
   const methodCallRegex =
-    /\.(get|post|put|patch|delete)\s*\(\s*(['"`])([^'"`]+)\2/gi;
+    /\.(get|post|put|patch|delete)\s*\(\s*(['"`])([^'"`]+)\2(?!\s*\+)/gi;
 
   // Pattern 2: fetch('/path', { method: 'POST' })
   // We detect fetch( + URL + optional method in the next ~100 chars
@@ -106,6 +115,15 @@ export function extractApiCallsFromSource(
   // Pattern 4: request('/path', 'POST')  — generic helper
   const genericRequestRegex =
     /\brequest\s*\(\s*(['"`])([^'"`]+)\1\s*(?:,\s*(['"`])(GET|POST|PUT|PATCH|DELETE)\3)?/gi;
+
+  // Pattern 5: axios.get('/api/prefix/' + variable)  — string concatenation with static prefix.
+  // We capture the static prefix and treat the unknown suffix as a wildcard segment.
+  // Only the method-call variant is handled here; fetch+concat is covered separately below.
+  const concatMethodRegex =
+    /\.(get|post|put|patch|delete)\s*\(\s*(['"`])([^'"`]+)\2\s*\+/gi;
+
+  // Pattern 6: fetch('/api/prefix/' + variable, ...) — concat inside fetch
+  const concatFetchRegex = /\bfetch\s*\(\s*(['"`])([^'"`]+)\1\s*\+([^)]*)\)/g;
 
   function getLineNumber(offset: number): number {
     // Count newlines up to offset
@@ -129,6 +147,15 @@ export function extractApiCallsFromSource(
     // Skip CSS/asset/static paths
     if (/\.(css|svg|png|jpe?g|gif|ico|woff2?|ttf|eot)$/i.test(p)) return false;
     return true;
+  }
+
+  /** Build a wildcard-terminated path from a static concat prefix.
+   *  '/api/users/'  → '/api/users/*'
+   *  '/api/users'   → '/api/users/*'
+   */
+  function concatPath(prefix: string): string {
+    const stripped = prefix.endsWith("/") ? prefix.slice(0, -1) : prefix;
+    return stripped + "/*";
   }
 
   let match: RegExpExecArray | null;
@@ -189,6 +216,39 @@ export function extractApiCallsFromSource(
     });
   }
 
+  // Pattern 5: axios.get('/api/prefix/' + variable)
+  // Pattern 1's negative lookahead excludes these cases, so no dedup needed.
+  while ((match = concatMethodRegex.exec(source)) !== null) {
+    const rawPrefix = match[3];
+    if (!isApiLike(rawPrefix)) continue;
+    const line = getLineNumber(match.index);
+    calls.push({
+      method: match[1].toUpperCase(),
+      path: concatPath(rawPrefix),
+      file: relFile,
+      line,
+      snippet: getSnippet(line),
+      isConcatPath: true,
+    });
+  }
+
+  // Pattern 6: fetch('/api/prefix/' + variable, ...)
+  while ((match = concatFetchRegex.exec(source)) !== null) {
+    const rawPrefix = match[2];
+    if (!isApiLike(rawPrefix)) continue;
+    const tail = match[3] ?? "";
+    const methodMatch = tail.match(/method\s*:\s*['"`](GET|POST|PUT|PATCH|DELETE)['"`]/i);
+    const line = getLineNumber(match.index);
+    calls.push({
+      method: methodMatch ? methodMatch[1].toUpperCase() : "GET",
+      path: concatPath(rawPrefix),
+      file: relFile,
+      line,
+      snippet: getSnippet(line),
+      isConcatPath: true,
+    });
+  }
+
   return calls;
 }
 
@@ -211,6 +271,7 @@ export function normalizePathSegments(p: string): string[] {
   const withoutQs = p.split("?")[0];
   const segments = withoutQs.split("/").filter(Boolean);
   return segments.map((seg) => {
+    if (seg === "*") return "*";                          // explicit wildcard (concat paths)
     if (seg.startsWith(":")) return "*";
     if (seg.includes("${") || seg.includes("{{")) return "*";
     if (/^\d+$/.test(seg)) return "*";
@@ -286,9 +347,13 @@ export async function verifyCrossStackContract(
   const phantom: FrontendApiCall[] = [];
   const methodMismatch: Array<{ call: FrontendApiCall; expectedMethod: string }> = [];
   const matched: Array<{ call: FrontendApiCall; endpointId: string }> = [];
+  const unknownMethodCalls: FrontendApiCall[] = [];
   const usedEndpointIds = new Set<string>();
 
   for (const call of allCalls) {
+    // Track UNKNOWN-method calls for visibility regardless of matching outcome.
+    if (call.method === "UNKNOWN") unknownMethodCalls.push(call);
+
     // Find all DSL endpoints whose path matches this call's path.
     const pathMatches = backendEndpoints.filter((ep) => pathsMatch(ep.path, call.path));
     if (pathMatches.length === 0) {
@@ -296,6 +361,7 @@ export async function verifyCrossStackContract(
       continue;
     }
     // Check if any path-match also matches the method.
+    // UNKNOWN is treated permissively — matched against the first path hit.
     const methodMatch = pathMatches.find(
       (ep) => call.method === "UNKNOWN" || ep.method === call.method
     );
@@ -319,7 +385,9 @@ export async function verifyCrossStackContract(
     unused,
     methodMismatch,
     matched,
+    unknownMethodCalls,
     totalScannedFiles: files.length,
+    hasViolations: phantom.length > 0 || methodMismatch.length > 0,
   };
 }
 
@@ -332,10 +400,12 @@ export function printCrossStackReport(repoName: string, report: CrossStackReport
   const mismatchCount = report.methodMismatch.length;
   const unusedCount = report.unused.length;
 
+  const concatCount = report.frontendCalls.filter((c) => c.isConcatPath).length;
+  const concatNote = concatCount > 0 ? ` (${concatCount} via string concat — approximate)` : "";
   console.log(chalk.cyan(`\n─── Cross-Stack Contract Verification [${repoName}] ─────────────`));
   console.log(
     chalk.gray(
-      `  Scanned ${report.totalScannedFiles} file(s), found ${report.frontendCalls.length} HTTP call(s)`
+      `  Scanned ${report.totalScannedFiles} file(s), found ${report.frontendCalls.length} HTTP call(s)${concatNote}`
     )
   );
   console.log(chalk.gray(`  Backend DSL endpoints: ${totalEp}`));
@@ -387,8 +457,25 @@ export function printCrossStackReport(repoName: string, report: CrossStackReport
     }
   }
 
+  // ── UNKNOWN method calls ─────────────────────────────────────────────────────
+  // Surface for visibility; they were matched permissively and may hide real mismatches.
+  if (report.unknownMethodCalls.length > 0) {
+    console.log(
+      chalk.gray(
+        `\n  · Unknown method (${report.unknownMethodCalls.length}): HTTP method could not be determined — matched permissively`
+      )
+    );
+    for (const call of report.unknownMethodCalls.slice(0, 5)) {
+      console.log(chalk.gray(`     UNKNWN ${call.path}`));
+      console.log(chalk.gray(`       ${call.file}:${call.line}`));
+    }
+    if (report.unknownMethodCalls.length > 5) {
+      console.log(chalk.gray(`     ... and ${report.unknownMethodCalls.length - 5} more`));
+    }
+  }
+
   // ── Summary ─────────────────────────────────────────────────────────────────
-  if (phantomCount === 0 && mismatchCount === 0 && unusedCount === 0 && matchedCount === totalEp && totalEp > 0) {
+  if (!report.hasViolations && unusedCount === 0 && matchedCount === totalEp && totalEp > 0) {
     console.log(chalk.green(`\n  ✔ Contract fully aligned — all ${totalEp} endpoints consumed correctly.`));
   }
   console.log(chalk.cyan("─".repeat(65)));

@@ -78,6 +78,41 @@ describe("extractApiCallsFromSource", () => {
     const calls = extractApiCallsFromSource(src, "a.ts");
     expect(calls[0].method).toBe("UNKNOWN");
   });
+
+  it("extracts axios.get('/api/prefix/' + variable) as concat path", () => {
+    const src = `axios.get('/api/users/' + userId)`;
+    const calls = extractApiCallsFromSource(src, "a.ts");
+    expect(calls).toHaveLength(1);
+    expect(calls[0].method).toBe("GET");
+    expect(calls[0].isConcatPath).toBe(true);
+    // Path should end with /* wildcard
+    expect(calls[0].path).toBe("/api/users/*");
+  });
+
+  it("extracts axios.post('/api/prefix/' + variable) as concat path with correct method", () => {
+    const src = `axios.post('/api/orders/' + id, body)`;
+    const calls = extractApiCallsFromSource(src, "a.ts");
+    const concatCall = calls.find((c) => c.isConcatPath);
+    expect(concatCall).toBeDefined();
+    expect(concatCall!.method).toBe("POST");
+    expect(concatCall!.path).toBe("/api/orders/*");
+  });
+
+  it("does NOT double-count full-literal paths as concat", () => {
+    // '/api/users/' is the full path (no + follows), should not be marked concat
+    const src = `axios.get('/api/users/');`;
+    const calls = extractApiCallsFromSource(src, "a.ts");
+    expect(calls.every((c) => !c.isConcatPath)).toBe(true);
+  });
+
+  it("extracts fetch('/api/prefix/' + variable) as concat path", () => {
+    const src = `fetch('/api/items/' + id, { method: 'DELETE' })`;
+    const calls = extractApiCallsFromSource(src, "a.ts");
+    const concatCall = calls.find((c) => c.isConcatPath);
+    expect(concatCall).toBeDefined();
+    expect(concatCall!.method).toBe("DELETE");
+    expect(concatCall!.path).toBe("/api/items/*");
+  });
 });
 
 // ─── Path normalization & matching ────────────────────────────────────────────
@@ -297,5 +332,71 @@ describe("verifyCrossStackContract", () => {
     const report = await verifyCrossStackContract(dsl, tmpDir, { scopedFiles: [] });
     // Empty list is treated as "no scope" → walks whole tree
     expect(report.matched).toHaveLength(1);
+  });
+
+  it("hasViolations is false when contract is clean", async () => {
+    await fs.writeFile(path.join(tmpDir, "a.ts"), `axios.get('/api/users');`);
+    const dsl = buildDsl([{ id: "EP-1", method: "GET", path: "/api/users" }]);
+
+    const report = await verifyCrossStackContract(dsl, tmpDir);
+    expect(report.hasViolations).toBe(false);
+  });
+
+  it("hasViolations is true when there are phantom calls", async () => {
+    await fs.writeFile(path.join(tmpDir, "a.ts"), `axios.get('/api/ghost');`);
+    const dsl = buildDsl([{ id: "EP-1", method: "GET", path: "/api/users" }]);
+
+    const report = await verifyCrossStackContract(dsl, tmpDir);
+    expect(report.hasViolations).toBe(true);
+  });
+
+  it("hasViolations is true when there are method mismatches", async () => {
+    await fs.writeFile(path.join(tmpDir, "a.ts"), `axios.get('/api/users');`);
+    const dsl = buildDsl([{ id: "EP-1", method: "POST", path: "/api/users" }]);
+
+    const report = await verifyCrossStackContract(dsl, tmpDir);
+    expect(report.hasViolations).toBe(true);
+    expect(report.methodMismatch).toHaveLength(1);
+  });
+
+  it("unknownMethodCalls is populated for UNKNOWN method calls", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "a.ts"),
+      `request('/api/users'); axios.get('/api/users');`
+    );
+    const dsl = buildDsl([{ id: "EP-1", method: "GET", path: "/api/users" }]);
+
+    const report = await verifyCrossStackContract(dsl, tmpDir);
+    expect(report.unknownMethodCalls).toHaveLength(1);
+    expect(report.unknownMethodCalls[0].method).toBe("UNKNOWN");
+    // UNKNOWN is matched permissively — not a violation
+    expect(report.hasViolations).toBe(false);
+  });
+
+  it("matches concat path axios.get('/api/users/' + id) against DSL /api/users/:id", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "a.ts"),
+      "axios.get('/api/users/' + userId);"
+    );
+    const dsl = buildDsl([{ id: "EP-1", method: "GET", path: "/api/users/:id" }]);
+
+    const report = await verifyCrossStackContract(dsl, tmpDir);
+    expect(report.phantom).toHaveLength(0);
+    expect(report.matched).toHaveLength(1);
+    expect(report.matched[0].call.isConcatPath).toBe(true);
+    expect(report.hasViolations).toBe(false);
+  });
+
+  it("flags concat path as phantom when no DSL endpoint matches the static prefix", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "a.ts"),
+      "axios.get('/api/ghost/' + id);"
+    );
+    const dsl = buildDsl([{ id: "EP-1", method: "GET", path: "/api/users/:id" }]);
+
+    const report = await verifyCrossStackContract(dsl, tmpDir);
+    expect(report.phantom).toHaveLength(1);
+    expect(report.phantom[0].isConcatPath).toBe(true);
+    expect(report.hasViolations).toBe(true);
   });
 });

@@ -662,6 +662,15 @@ export async function runMultiRepoPipeline(
           { scopedFiles: fe.generatedFiles }
         );
         printCrossStackReport(fe.repoName, report);
+        if (report.hasViolations) {
+          console.log(
+            chalk.yellow(
+              `  ⚠ [W5] ${fe.repoName} has cross-stack violations` +
+              ` (${report.phantom.length} phantom, ${report.methodMismatch.length} method mismatch).` +
+              ` Review the report above and fix generated frontend code.`
+            )
+          );
+        }
       } catch (err) {
         console.log(chalk.yellow(`  ⚠ Verification failed for ${fe.repoName}: ${(err as Error).message}`));
       }
