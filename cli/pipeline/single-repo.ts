@@ -52,6 +52,12 @@ import {
 } from "../../core/vcr";
 import { printBanner } from "./helpers";
 import { startSpinner, startStage } from "../../core/cli-ui";
+import { exportOpenApi } from "../../core/openapi-exporter";
+import { saveTypescriptTypes } from "../../core/types-generator";
+import { input } from "@inquirer/prompts";
+import { appendDirectLesson } from "../../core/knowledge-memory";
+import { verifyImports, printImportVerificationReport } from "../../core/import-verifier";
+import { runImportFix, printFixReport } from "../../core/import-fixer";
 
 // ─── Pipeline Options ────────────────────────────────────────────────────────
 
@@ -78,6 +84,8 @@ export interface SingleRepoPipelineOpts {
   worktree?: boolean;
   vcrRecord?: boolean;
   vcrReplay?: string;
+  openapi?: boolean;
+  types?: boolean;
 }
 
 // ─── Single-repo pipeline ────────────────────────────────────────────────────
@@ -96,7 +104,7 @@ export async function runSingleRepoPipeline(
 
   // ── Resolve codegen ─────────────────────────────────────────────────────
   const codegenMode: CodeGenMode =
-    (opts.codegen as CodeGenMode) || config.codegen || "claude-code";
+    (opts.codegen as CodeGenMode) || config.codegen || "api";
   const codegenProviderName =
     opts.codegenProvider || config.codegenProvider || specProviderName;
   const codegenModelName =
@@ -155,7 +163,7 @@ export async function runSingleRepoPipeline(
   runLogger.stageStart("context_load");
   const loader = new ContextLoader(currentDir);
   const context = await loader.loadProjectContext();
-  const { type: detectedRepoType } = await detectRepoType(currentDir);
+  const { type: detectedRepoType, role: detectedRepoRole } = await detectRepoType(currentDir);
   runLogger.stageEnd("context_load", { techStack: context.techStack, repoType: detectedRepoType });
   console.log(chalk.gray(`  Tech stack  : ${context.techStack.join(", ") || "unknown"} [${detectedRepoType}]`));
   console.log(chalk.gray(`  Dependencies: ${context.dependencies.length} packages`));
@@ -498,6 +506,24 @@ export async function runSingleRepoPipeline(
     const dslExtractor = new DslExtractor(specProvider);
     savedDslFile = await dslExtractor.saveDsl(extractedDsl, specFile);
     console.log(chalk.green(`  ✔ DSL saved : ${savedDslFile}`));
+
+    // ── Auto-generate OpenAPI / TypeScript types if requested ──────────────
+    if (opts.openapi) {
+      try {
+        const openapiPath = await exportOpenApi(extractedDsl, currentDir, { format: "yaml" });
+        console.log(chalk.green(`  ✔ OpenAPI   : ${path.relative(currentDir, openapiPath)}`));
+      } catch (err) {
+        console.log(chalk.yellow(`  ⚠ OpenAPI export failed: ${(err as Error).message}`));
+      }
+    }
+    if (opts.types) {
+      try {
+        const typesPath = await saveTypescriptTypes(extractedDsl, currentDir, {});
+        console.log(chalk.green(`  ✔ TS Types  : ${path.relative(currentDir, typesPath)}`));
+      } catch (err) {
+        console.log(chalk.yellow(`  ⚠ Types generation failed: ${(err as Error).message}`));
+      }
+    }
   }
 
   if (!opts.skipTasks) {
@@ -554,8 +580,69 @@ export async function runSingleRepoPipeline(
     resume: opts.resume,
     dslFilePath: savedDslFile ?? undefined,
     repoType: detectedRepoType,
+    maxConcurrency: config.maxCodegenConcurrency,
+    injectFixHistory: config.injectFixHistory,
+    fixHistoryInjectMax: config.fixHistoryInjectMax,
   });
   runLogger.stageEnd("codegen", { filesGenerated: generatedFiles.length });
+
+  // ── Step 6.5: Import Verification + Auto-Fix ───────────────────────────
+  // Static check that every import in the generated files actually resolves.
+  // If broken imports are found, run a two-stage fix:
+  //   Stage A: deterministic DSL-driven stub generation
+  //   Stage B: AI-driven repair (only for what Stage A could not handle)
+  // After fixes, re-verify to confirm.
+  if (generatedFiles.length > 0) {
+    runLogger.stageStart("import_verify");
+    try {
+      const absFiles = generatedFiles.map((f) =>
+        path.isAbsolute(f) ? f : path.join(workingDir, f)
+      );
+      const importReport = await verifyImports(absFiles, workingDir);
+      printImportVerificationReport(path.basename(workingDir), importReport);
+      runLogger.stageEnd("import_verify", {
+        totalImports: importReport.totalImports,
+        broken: importReport.brokenImports.length,
+        external: importReport.externalImports,
+      });
+
+      // ── Auto-fix loop ────────────────────────────────────────────────────
+      if (importReport.brokenImports.length > 0) {
+        runLogger.stageStart("import_fix");
+        try {
+          const fixReport = await runImportFix({
+            brokenImports: importReport.brokenImports,
+            dsl: extractedDsl,
+            repoRoot: workingDir,
+            generatedFilePaths: absFiles,
+            provider: codegenProvider,
+            runId,
+            recordHistory: true,
+          });
+          printFixReport(path.basename(workingDir), fixReport);
+          runLogger.stageEnd("import_fix", {
+            deterministic: fixReport.deterministicCount,
+            aiFixed: fixReport.aiFixedCount,
+            applied: fixReport.applied.length,
+            unresolved: fixReport.unresolvedCount,
+          });
+
+          // Re-verify after fixes
+          if (fixReport.applied.length > 0) {
+            console.log(chalk.blue("\n  Re-running import verifier after fixes..."));
+            const reverifyReport = await verifyImports(absFiles, workingDir);
+            printImportVerificationReport(`${path.basename(workingDir)} (after fix)`, reverifyReport);
+          }
+        } catch (err) {
+          runLogger.stageFail("import_fix", (err as Error).message);
+          console.log(chalk.yellow(`  ⚠ Import auto-fix failed: ${(err as Error).message}`));
+        }
+      }
+    } catch (err) {
+      runLogger.stageFail("import_verify", (err as Error).message);
+      console.log(chalk.yellow(`  ⚠ Import verification failed: ${(err as Error).message}`));
+    }
+  }
 
   // ── Step 7: Test Skeleton Generation ───────────────────────────────────
   if (opts.tdd) {
@@ -710,6 +797,7 @@ export async function runSingleRepoPipeline(
     reviewText: reviewResult,
     promptHash,
     logger: runLogger,
+    repoType: detectedRepoRole,
   });
   printSelfEval(selfEvalResult);
 
@@ -743,6 +831,19 @@ export async function runSingleRepoPipeline(
       console.log(chalk.gray(`  call #${m.index}: expected ${m.expected}, got ${m.actual}`));
     }
     console.log(chalk.yellow("  The pipeline structure may have changed since the recording was made."));
+  }
+
+  // ── Quick lesson capture (skip in auto/fast mode) ───────────────────────
+  if (!opts.auto && !opts.fast) {
+    try {
+      const lesson = await input({ message: "Any lessons to note? (Enter to skip):" });
+      if (lesson.trim()) {
+        await appendDirectLesson(currentDir, lesson.trim());
+        console.log(chalk.green("  ✔ Lesson saved to constitution §9."));
+      }
+    } catch {
+      // non-blocking if prompt is interrupted
+    }
   }
 
   // ── Done ────────────────────────────────────────────────────────────────

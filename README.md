@@ -12,8 +12,8 @@
 <p align="center">
   <a href="https://github.com/hzhongzhong/ai-spec"><img src="https://img.shields.io/badge/GitHub-ai--spec-181717?logo=github" alt="GitHub" /></a>
   <a href="https://www.npmjs.com/package/ai-spec-dev"><img src="https://img.shields.io/npm/v/ai-spec-dev?color=cb3837&logo=npm" alt="npm" /></a>
-  <img src="https://img.shields.io/badge/version-0.37.0-blue" alt="version" />
-  <img src="https://img.shields.io/badge/tests-409%20passed-brightgreen" alt="tests" />
+  <img src="https://img.shields.io/badge/version-0.55.0-blue" alt="version" />
+  <img src="https://img.shields.io/badge/tests-913%20passed-brightgreen" alt="tests" />
   <img src="https://img.shields.io/badge/providers-9-orange" alt="providers" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="license" />
 </p>
@@ -31,10 +31,11 @@
 **ai-spec** is an AI-driven development orchestrator SDK & CLI that transforms a one-line requirement into production-ready code through a fully automated pipeline:
 
 ```
-Requirement → Constitution → Context → Spec + Tasks → Interactive Refinement
+init: Register Repos → Project Constitutions → Global Constitution
+create: Requirement → Select Repo(s) → Context → Spec + Tasks → Refinement
 → Quality Assessment → Approval Gate → DSL Extraction → Gap Feedback
 → Git Isolation → Code Generation → TDD / Test Skeleton → Auto Error Fix
-→ 3-Pass Code Review → Review→DSL Loop → Harness Self-Eval → Knowledge Memory
+→ 3-Pass Code Review → Review→DSL Loop → Harness Self-Eval
 ```
 
 **Multi-Repo mode (Workspace):**
@@ -69,16 +70,20 @@ npm run build
 # Set API key (Gemini example)
 export GEMINI_API_KEY=your_key_here
 
-# Initialize project constitution (optional — create auto-triggers it)
+# Initialize: register repos + generate constitutions
 ai-spec init
 
-# Start developing
+# Start developing (select registered repo → run pipeline)
 ai-spec create "Add login functionality to user module"
 ```
 
 ### Pipeline Demo
 
 ```
+[Repo]  Select repo(s) for this feature:
+        ● my-vue-app (vue / frontend)
+        ○ my-node-api (node-express / backend)
+        ✔ 1 repo selected
 [1/6]   Loading project context...
         Constitution : ✔ found
 [2/6]   Generating spec with gemini/gemini-2.5-pro...
@@ -117,19 +122,35 @@ ai-spec create "Add login functionality to user module"
 ### Commands
 
 ```
-ai-spec init                 Analyze codebase, generate project constitution
-ai-spec create [idea]        Full pipeline: constitution → spec → DSL → codegen → review → self-eval
-ai-spec update [change]      Incremental update: modify spec → re-extract DSL → regenerate affected files
-ai-spec learn [lesson]       Inject knowledge directly into constitution §9
-ai-spec review [file]        3-pass AI code review (architecture + implementation + impact)
-ai-spec export               DSL → OpenAPI 3.1.0 YAML/JSON
-ai-spec types                DSL → TypeScript types (models + endpoint types + API_ENDPOINTS)
-ai-spec mock                 DSL → Mock server + MSW handlers + proxy config
-ai-spec dashboard            Generate static HTML harness dashboard
-ai-spec restore <runId>      Rollback all files modified by a specific run
-ai-spec model                Interactive provider/model switcher
-ai-spec config               View/modify project configuration
-ai-spec workspace init       Initialize multi-repo workspace
+# Core workflow
+ai-spec init                       Register repos, generate constitutions (auto-scans projects)
+ai-spec init --add-repo            Quick-add a single repo
+ai-spec init --status              Show registered repos and constitution health
+ai-spec create [idea]              Full pipeline: spec → DSL → codegen → review
+ai-spec create [idea] --openapi    Also auto-generate OpenAPI 3.1.0 YAML after DSL
+ai-spec create [idea] --types      Also auto-generate TypeScript types after DSL
+ai-spec update [change]            Incremental: modify spec → re-extract DSL → regen affected files
+ai-spec review [file]              3-pass AI code review (architecture + implementation + impact)
+
+# Knowledge & constitution
+ai-spec learn [lesson]             Inject a lesson directly into constitution §9
+
+# DSL-derived artifacts
+ai-spec export                     DSL → OpenAPI 3.1.0 YAML/JSON
+ai-spec types                      DSL → TypeScript types (models + endpoint types + API_ENDPOINTS)
+ai-spec mock                       DSL → Mock server + MSW handlers + proxy config
+
+# Configuration (run without flags for interactive model/provider picker)
+ai-spec config                     Interactive provider/model setup (merged from `model`)
+ai-spec config --show              Print current configuration
+ai-spec config --list              List all available providers and models
+
+# Observability
+ai-spec logs [runId]               View run history or stage breakdown
+ai-spec trend                      Harness score trend across runs
+ai-spec dashboard                  Generate static HTML harness dashboard
+ai-spec restore <runId>            Rollback all files modified by a specific run
+ai-spec vcr list                   List VCR recordings
 ```
 
 ### Architecture
@@ -204,10 +225,11 @@ MIT
 **ai-spec** 是一个 AI 驱动的功能开发编排工具 SDK & CLI —— 从一句话需求到可运行代码的完整流水线，支持单 Repo 及多 Repo 跨端联动。
 
 ```
-需求描述 → 项目宪法 → 项目感知 → Spec+Tasks → 交互式润色(Diff预览)
+init: 注册仓库 → 项目级宪法 → 全局宪法汇总
+create: 需求描述 → 选择仓库 → 项目感知 → Spec+Tasks → 交互式润色(Diff预览)
 → Spec质量预评估 → Approval Gate → DSL提取+校验 → DSL Gap Feedback
 → Git 隔离 → 代码生成(同层并行) → TDD测试/测试骨架 → 错误反馈自动修复
-→ 3-pass 代码审查 → Review→DSL Loop → Harness Self-Eval → 经验积累(宪法§9)
+→ 3-pass 代码审查 → Review→DSL Loop → Harness Self-Eval
 ```
 
 **多 Repo 模式（工作区）：**
@@ -242,16 +264,20 @@ npm run build
 # 设置 API Key（以 Gemini 为例）
 export GEMINI_API_KEY=your_key_here
 
-# 首次使用：生成项目宪法（可选，create 会自动触发）
+# 初始化：注册仓库 + 生成宪法链路
 ai-spec init
 
-# 开始开发
+# 开始开发（选择已注册仓库 → 跑 pipeline）
 ai-spec create "给用户模块增加登录功能"
 ```
 
 ### 流水线演示
 
 ```
+[Repo]  选择本次开发的仓库:
+        ● my-vue-app (vue / frontend)
+        ○ my-node-api (node-express / backend)
+        ✔ 已选择 1 个仓库
 [1/6]   加载项目上下文...
         Constitution : ✔ found
 [2/6]   使用 gemini/gemini-2.5-pro 生成 Spec...
@@ -307,19 +333,35 @@ ai-spec create "给用户模块增加登录功能"
 ### 命令总览
 
 ```
-ai-spec init                 分析代码库，生成项目宪法（.ai-spec-constitution.md）
-ai-spec create [idea]        完整流水线：宪法 → spec → DSL → 代码生成 → 审查 → 自评
-ai-spec update [change]      增量更新：修改 Spec → 重提取 DSL → 重新生成受影响文件
-ai-spec learn [lesson]       零摩擦知识注入，直接写入宪法 §9
-ai-spec review [file]        3-pass AI 代码审查（架构 + 实现 + 影响面）
-ai-spec export               DSL → OpenAPI 3.1.0 YAML/JSON
-ai-spec types                DSL → TypeScript 类型文件
-ai-spec mock                 DSL → Mock 服务器 + MSW Handlers + 代理配置
-ai-spec dashboard            生成静态 HTML Harness Dashboard
-ai-spec restore <runId>      回滚指定 run 修改的所有文件
-ai-spec model                交互式切换 AI provider/model
-ai-spec config               查看/修改项目配置
-ai-spec workspace init       初始化多 Repo 工作区
+# 核心开发流程
+ai-spec init                       注册仓库，生成项目宪法 + 全局宪法（自动扫描项目）
+ai-spec init --add-repo            快速添加单个仓库
+ai-spec init --status              查看已注册仓库和宪法状态
+ai-spec create [idea]              完整流水线：spec → DSL → 代码生成 → 审查
+ai-spec create [idea] --openapi    DSL 提取后自动生成 OpenAPI 3.1.0 YAML
+ai-spec create [idea] --types      DSL 提取后自动生成 TypeScript 类型文件
+ai-spec update [change]            增量更新：修改 Spec → 重提取 DSL → 重新生成受影响文件
+ai-spec review [file]              3-pass AI 代码审查（架构 + 实现 + 影响面）
+
+# 知识 & 宪法
+ai-spec learn [lesson]             零摩擦知识注入，直接写入宪法 §9
+
+# DSL 衍生产物
+ai-spec export                     DSL → OpenAPI 3.1.0 YAML/JSON
+ai-spec types                      DSL → TypeScript 类型文件
+ai-spec mock                       DSL → Mock 服务器 + MSW Handlers + 代理配置
+
+# 配置（无参数运行进入交互式 provider/model 选择）
+ai-spec config                     交互式 provider/model 配置（已合并原 model 命令）
+ai-spec config --show              查看当前配置
+ai-spec config --list              列出所有可用 provider 和模型
+
+# 可观测性
+ai-spec logs [runId]               查看 run 历史 / 指定 run 的 stage 详情
+ai-spec trend                      Harness score 趋势分析
+ai-spec dashboard                  生成静态 HTML Harness Dashboard
+ai-spec restore <runId>            回滚指定 run 修改的所有文件
+ai-spec vcr list                   列出 VCR 录制
 ```
 
 <details>
@@ -387,13 +429,17 @@ ai-spec export --server <url>          # 指定服务器 URL
 ### 工作流详解
 
 <details>
-<summary>Step 1 — 项目宪法 + Context</summary>
+<summary>Step 0 — 初始化（ai-spec init）</summary>
 
-**项目宪法**（`.ai-spec-constitution.md`）包含 §1–§9 共 9 个章节，涵盖架构规则、命名规范、API 规范、数据层、错误处理、禁区、测试规范、共享配置清单、累积经验。
+`ai-spec init` 完成工作区准备：
 
-自动扫描的上下文包括：`package.json` / `composer.json` / `pom.xml` 依赖列表、Prisma schema、路由文件、错误处理模式、i18n/constants/enums 等共享配置。
+1. **注册仓库**：输入仓库绝对路径 → 自动检测类型/角色（Vue/React/Node/Java/...）
+2. **生成项目宪法**：对每个仓库自动扫描并生成 `.ai-spec-constitution.md`（§1–§9）
+3. **生成全局宪法**：汇总所有仓库的项目宪法要点 → 生成 `.ai-spec-global-constitution.md`
 
-**Constitution Rebase**：§9 积累超过 8 条时，运行 `ai-spec init --consolidate` 将经验提炼归并到 §1–§8。
+宪法链路：**仓库注册 → 项目宪法 → 全局宪法汇总**，运行时自动 merge（全局为基线，项目级覆盖）。
+
+`--add-repo` 支持快速追加仓库，`--consolidate` 将 §9 积累经验提炼归并到 §1–§8。
 </details>
 
 <details>

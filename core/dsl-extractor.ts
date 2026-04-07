@@ -13,6 +13,7 @@ import {
 } from "../prompts/dsl.prompt";
 import { estimateTokens, getDefaultBudget } from "./token-budget";
 import { parseJsonFromAiOutput } from "./safe-json";
+import { DEFAULT_DSL_MAX_RETRIES } from "./config-defaults";
 
 // ─── DSL Sanitizer ───────────────────────────────────────────────────────────
 
@@ -50,7 +51,7 @@ function sanitizeDsl(raw: unknown): unknown {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 /** Maximum AI attempts (1 initial + up to this many retries). */
-const MAX_RETRIES = 2;
+const MAX_RETRIES = DEFAULT_DSL_MAX_RETRIES;
 
 /** Default maximum spec length passed to AI. Overridden by token budget when provider is known. */
 const DEFAULT_MAX_SPEC_CHARS = 12_000;

@@ -8,6 +8,7 @@ import { SpecDSL } from "./dsl-types";
 import { buildDslContextSection } from "./dsl-extractor";
 import { getActiveSnapshot } from "./run-snapshot";
 import { startSpinner } from "./cli-ui";
+import { DEFAULT_MAX_COMMAND_OUTPUT_CHARS, DEFAULT_MAX_FIX_FILE_CHARS } from "./config-defaults";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -30,14 +31,14 @@ interface FixResult {
  * ~10K tokens — enough for any realistic error listing; prevents a pathological
  * build output (e.g. 10MB of warnings) from ballooning the AI context.
  */
-const MAX_COMMAND_OUTPUT_CHARS = 50_000;
+const MAX_COMMAND_OUTPUT_CHARS = DEFAULT_MAX_COMMAND_OUTPUT_CHARS;
 
 /**
  * Maximum characters of an existing file sent to the AI for auto-fix.
  * ~12K tokens — covers large files; content beyond this is truncated with a
  * notice so the AI knows it may be seeing an incomplete file.
  */
-const MAX_FIX_FILE_CHARS = 60_000;
+const MAX_FIX_FILE_CHARS = DEFAULT_MAX_FIX_FILE_CHARS;
 
 // ─── Error Detection ────────────────────────────────────────────────────────────
 

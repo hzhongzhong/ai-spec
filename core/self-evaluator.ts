@@ -35,8 +35,8 @@ export interface SelfEvalResult {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** File-path patterns that indicate an API / controller / route layer file. */
-const ENDPOINT_LAYER_PATTERNS = [
+/** File-path patterns that indicate an API / controller / route layer file (backend). */
+const BACKEND_ENDPOINT_LAYER_PATTERNS = [
   /src\/api/,
   /src\/routes?/,
   /src\/controller/,
@@ -44,8 +44,8 @@ const ENDPOINT_LAYER_PATTERNS = [
   /src\/endpoints?/,
 ];
 
-/** File-path patterns that indicate a data / model / schema layer file. */
-const MODEL_LAYER_PATTERNS = [
+/** File-path patterns that indicate a data / model / schema layer file (backend). */
+const BACKEND_MODEL_LAYER_PATTERNS = [
   /src\/model/,
   /src\/schema/,
   /src\/entit/,
@@ -53,6 +53,33 @@ const MODEL_LAYER_PATTERNS = [
   /prisma/,
   /src\/data/,
   /src\/domain/,
+];
+
+/**
+ * File-path patterns that indicate a view / page / screen layer file (frontend/mobile).
+ * Covers React (pages/), Next.js (app/ or pages/), Vue (views/), React Native (screens/).
+ */
+const FRONTEND_ENDPOINT_LAYER_PATTERNS = [
+  /src\/pages/,
+  /src\/views/,
+  /src\/screens/,    // React Native / mobile
+  /(?:^|\/)pages\//,       // Next.js pages router (root-level pages/)
+  /(?:^|\/)app\//,         // Next.js App Router
+  /src\/routes?/,    // client-side routing files
+];
+
+/**
+ * File-path patterns that indicate a type / store / hook / service layer (frontend/mobile).
+ * These are the "model layer" equivalent on the client side.
+ */
+const FRONTEND_MODEL_LAYER_PATTERNS = [
+  /src\/types/,
+  /src\/store/,
+  /src\/stores/,
+  /src\/hooks/,
+  /src\/composables/,  // Vue Composition API
+  /src\/services/,
+  /src\/api/,          // frontend API client layer
 ];
 
 /**
@@ -128,21 +155,31 @@ export function runSelfEval(opts: {
   reviewText: string;
   promptHash: string;
   logger: RunLogger;
+  /**
+   * Repo role — selects the appropriate layer-pattern set.
+   * 'frontend' and 'mobile' use page/view/hook/store patterns;
+   * 'backend' and 'shared' (default) use controller/model/schema patterns.
+   */
+  repoType?: 'frontend' | 'backend' | 'mobile' | 'shared' | string;
 }): SelfEvalResult {
   const { dsl, generatedFiles, compilePassed, reviewText, promptHash, logger } = opts;
+
+  const isFrontend = opts.repoType === 'frontend' || opts.repoType === 'mobile';
+  const endpointLayerPatterns = isFrontend ? FRONTEND_ENDPOINT_LAYER_PATTERNS : BACKEND_ENDPOINT_LAYER_PATTERNS;
+  const modelLayerPatterns    = isFrontend ? FRONTEND_MODEL_LAYER_PATTERNS    : BACKEND_MODEL_LAYER_PATTERNS;
 
   // ── DSL Coverage Score ────────────────────────────────────────────────────
   const endpointsTotal = dsl?.endpoints?.length ?? 0;
   const modelsTotal    = dsl?.models?.length    ?? 0;
 
   const endpointLayerCovered = generatedFiles.some((f) =>
-    ENDPOINT_LAYER_PATTERNS.some((p) => p.test(f))
+    endpointLayerPatterns.some((p) => p.test(f))
   );
   const endpointLayerFiles = generatedFiles.filter((f) =>
-    ENDPOINT_LAYER_PATTERNS.some((p) => p.test(f))
+    endpointLayerPatterns.some((p) => p.test(f))
   ).length;
   const modelLayerCovered = generatedFiles.some((f) =>
-    MODEL_LAYER_PATTERNS.some((p) => p.test(f))
+    modelLayerPatterns.some((p) => p.test(f))
   );
 
   // ── Tier 2: Model name coverage ───────────────────────────────────────────

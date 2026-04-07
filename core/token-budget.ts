@@ -6,6 +6,7 @@
  */
 
 import chalk from "chalk";
+import { DEFAULT_TOKEN_BUDGETS as _CONFIG_BUDGETS } from "./config-defaults";
 
 // ─── Token Estimation ────────────────────────────────────────────────────────
 
@@ -110,14 +111,8 @@ export function assembleSections(
 
 // ─── Default Budgets ─────────────────────────────────────────────────────────
 
-/** Default context token budgets per provider. */
-export const DEFAULT_TOKEN_BUDGETS: Record<string, number> = {
-  gemini: 900_000,
-  claude: 180_000,
-  openai: 120_000,
-  deepseek: 60_000,
-  default: 100_000,
-};
+/** Default context token budgets per provider (sourced from config-defaults). */
+export const DEFAULT_TOKEN_BUDGETS = _CONFIG_BUDGETS;
 
 export function getDefaultBudget(providerName: string): number {
   return DEFAULT_TOKEN_BUDGETS[providerName] ?? DEFAULT_TOKEN_BUDGETS.default;

@@ -1,8 +1,7 @@
 import * as fs from "fs-extra";
 import * as path from "path";
 import chalk from "chalk";
-
-const LOG_DIR = ".ai-spec-logs";
+import { DEFAULT_LOG_DIR } from "./config-defaults";
 
 // ─── JSONL helpers ────────────────────────────────────────────────────────────
 // Each event is synchronously appended as one JSON line to a `.jsonl` shadow
@@ -131,8 +130,8 @@ export class RunLogger {
     meta?: { provider?: string; model?: string; specPath?: string }
   ) {
     this.startMs = Date.now();
-    this.logPath  = path.join(workingDir, LOG_DIR, `${runId}.json`);
-    this.jsonlPath = path.join(workingDir, LOG_DIR, `${runId}.jsonl`);
+    this.logPath  = path.join(workingDir, DEFAULT_LOG_DIR, `${runId}.json`);
+    this.jsonlPath = path.join(workingDir, DEFAULT_LOG_DIR, `${runId}.jsonl`);
     this.log = {
       runId,
       startedAt: new Date().toISOString(),

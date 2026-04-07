@@ -27,7 +27,9 @@ import * as fs from "fs-extra";
 import * as path from "path";
 import { AIProvider } from "./spec-generator";
 
-export const VCR_DIR = ".ai-spec-vcr";
+import { DEFAULT_VCR_DIR } from "./config-defaults";
+
+export const VCR_DIR = DEFAULT_VCR_DIR;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

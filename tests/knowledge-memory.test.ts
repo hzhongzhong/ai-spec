@@ -324,4 +324,44 @@ describe("accumulateReviewKnowledge", () => {
     expect(content).not.toContain("积累教训");
     spy.mockRestore();
   });
+
+  it("skips accumulation when review score is >= 9.0 (quality gate)", async () => {
+    await fs.writeFile(path.join(tmpDir, CONSTITUTION), "# Constitution\n");
+    const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    // Score 9.5 — excellent run, even with an issues section it should be skipped
+    const review = `Score: 9.5/10
+
+## ⚠️ 问题
+- Minor: variable name could be more descriptive
+
+## 💡 建议
+- Consider extracting a helper
+`;
+    await accumulateReviewKnowledge(mockProvider, tmpDir, review);
+
+    const content = await fs.readFile(path.join(tmpDir, CONSTITUTION), "utf-8");
+    expect(content).not.toContain("积累教训");
+    spy.mockRestore();
+  });
+
+  it("embeds review score tag in lesson entries", async () => {
+    await fs.writeFile(path.join(tmpDir, CONSTITUTION), "# Constitution\n");
+    const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const review = `Score: 6.5/10
+
+## ⚠️ 问题
+- Missing error boundary around async data fetch — crashes on network failure
+
+## 💡 建议
+- Add retry logic
+`;
+    await accumulateReviewKnowledge(mockProvider, tmpDir, review);
+
+    const content = await fs.readFile(path.join(tmpDir, CONSTITUTION), "utf-8");
+    expect(content).toContain("(r:6.5)");
+    expect(content).toContain("error boundary");
+    spy.mockRestore();
+  });
 });

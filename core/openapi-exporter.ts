@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as fs from "fs-extra";
 import { SpecDSL, ApiEndpoint, DataModel, ModelField, FieldMap } from "./dsl-types";
+import { DEFAULT_OPENAPI_SERVER_URL } from "./config-defaults";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -272,7 +273,7 @@ function buildYamlDoc(obj: Record<string, unknown>): string {
  * Convert a SpecDSL to an OpenAPI 3.1.0 document.
  * Returns the document as a plain JS object (can be serialised to YAML or JSON).
  */
-export function dslToOpenApi(dsl: SpecDSL, serverUrl = "http://localhost:3000"): Record<string, unknown> {
+export function dslToOpenApi(dsl: SpecDSL, serverUrl = DEFAULT_OPENAPI_SERVER_URL): Record<string, unknown> {
   // ── Info ──────────────────────────────────────────────────────────────────
   const info = {
     title: dsl.feature.title,
@@ -338,7 +339,7 @@ export async function exportOpenApi(
   opts: OpenApiExportOptions = {}
 ): Promise<string> {
   const format = opts.format ?? "yaml";
-  const serverUrl = opts.serverUrl ?? "http://localhost:3000";
+  const serverUrl = opts.serverUrl ?? DEFAULT_OPENAPI_SERVER_URL;
   const defaultName = `openapi.${format}`;
   const outputPath = opts.outputPath
     ? path.isAbsolute(opts.outputPath)

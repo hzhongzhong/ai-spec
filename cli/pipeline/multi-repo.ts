@@ -35,9 +35,32 @@ import { loadFrontendContext } from "../../core/frontend-context-loader";
 import { buildFrontendSpecPrompt } from "../../prompts/frontend-spec.prompt";
 import { AiSpecConfig, resolveApiKey } from "../utils";
 import { printBanner, MultiRepoResult } from "./helpers";
+import {
+  verifyCrossStackContract,
+  printCrossStackReport,
+} from "../../core/cross-stack-verifier";
+import {
+  verifyImports,
+  printImportVerificationReport,
+} from "../../core/import-verifier";
+import { runImportFix, printFixReport } from "../../core/import-fixer";
+import { generateRunId, RunLogger, setActiveLogger } from "../../core/run-logger";
 import * as fs from "fs-extra";
 
 // ─── Single-repo workspace pipeline ──────────────────────────────────────────
+
+export interface WorkspaceRepoRunResult {
+  /** True only when spec_gen + codegen both succeeded and produced files. */
+  success: boolean;
+  /** Human-readable reason when success === false. */
+  failureReason?: string;
+  specFile: string | null;
+  dsl: SpecDSL | null;
+  /** Files written by codegen. Empty when codegen failed or wrote nothing. */
+  generatedFiles: string[];
+  /** Per-repo RunLogger ID — usable with `ai-spec logs <runId>` from the repo dir. */
+  runId: string;
+}
 
 export async function runSingleRepoPipelineInWorkspace(opts: {
   idea: string;
@@ -50,7 +73,10 @@ export async function runSingleRepoPipelineInWorkspace(opts: {
   repoName: string;
   cliOpts: Record<string, unknown>;
   contractContextSection?: string;
-}): Promise<{ dsl: SpecDSL | null; specFile: string | null }> {
+  maxCodegenConcurrency?: number;
+  injectFixHistory?: boolean;
+  fixHistoryInjectMax?: number;
+}): Promise<WorkspaceRepoRunResult> {
   const {
     idea,
     specProvider,
@@ -64,11 +90,22 @@ export async function runSingleRepoPipelineInWorkspace(opts: {
     contractContextSection,
   } = opts;
 
+  // ── Per-repo RunLogger ─────────────────────────────────────────────────────
+  // Each repo in a workspace pipeline gets its own log dir under the repo root
+  // so users can run `ai-spec logs` from inside the repo to debug failures.
+  const runId = generateRunId();
+  const runLogger = new RunLogger(repoAbsPath, runId, {
+    provider: specProviderName,
+    model: specModelName,
+  });
+  setActiveLogger(runLogger);
+
   console.log(chalk.blue(`\n  [${repoName}] Loading project context...`));
+  runLogger.stageStart("context_load");
   const loader = new ContextLoader(repoAbsPath);
   let context = await loader.loadProjectContext();
-
   const { type: detectedRepoType } = await detectRepoType(repoAbsPath);
+  runLogger.stageEnd("context_load", { techStack: context.techStack, repoType: detectedRepoType });
 
   console.log(chalk.gray(`    Tech stack: ${context.techStack.join(", ") || "unknown"} [${detectedRepoType}]`));
   console.log(chalk.gray(`    Dependencies: ${context.dependencies.length} packages`));
@@ -96,34 +133,55 @@ export async function runSingleRepoPipelineInWorkspace(opts: {
     fullIdea = `${idea}\n\n${contractContextSection}`;
   }
 
+  // ── Spec Generation (CRITICAL: failure here aborts the repo) ───────────────
   console.log(chalk.blue(`  [${repoName}] Generating spec...`));
+  runLogger.stageStart("spec_gen");
   let finalSpec: string;
   try {
     const result = await generateSpecWithTasks(specProvider, fullIdea, context);
     finalSpec = result.spec;
+    runLogger.stageEnd("spec_gen", { specLength: finalSpec.length });
     console.log(chalk.green(`    Spec generated.`));
   } catch (err) {
-    console.error(chalk.red(`    Spec generation failed: ${(err as Error).message}`));
-    return { dsl: null, specFile: null };
+    const msg = (err as Error).message;
+    runLogger.stageFail("spec_gen", msg);
+    runLogger.finish();
+    console.error(chalk.red(`    ✘ Spec generation failed: ${msg}`));
+    return {
+      success: false,
+      failureReason: `spec_gen failed: ${msg}`,
+      specFile: null,
+      dsl: null,
+      generatedFiles: [],
+      runId,
+    };
   }
 
-  // DSL Extraction
+  // ── DSL Extraction (non-fatal if missing) ──────────────────────────────────
   let extractedDsl: SpecDSL | null = null;
   if (!cliOpts.skipDsl) {
     console.log(chalk.blue(`  [${repoName}] Extracting DSL...`));
+    runLogger.stageStart("dsl_extract");
     try {
       const dslExtractor = new DslExtractor(specProvider);
       const repoIsFrontend = isFrontendDeps(context.dependencies);
       extractedDsl = await dslExtractor.extract(finalSpec, { auto: true, isFrontend: repoIsFrontend });
       if (extractedDsl) {
+        runLogger.stageEnd("dsl_extract", {
+          endpoints: extractedDsl.endpoints?.length ?? 0,
+          models: extractedDsl.models?.length ?? 0,
+        });
         console.log(chalk.green(`    DSL extracted.`));
+      } else {
+        runLogger.stageEnd("dsl_extract", { skipped: true });
       }
     } catch (err) {
+      runLogger.stageFail("dsl_extract", (err as Error).message);
       console.log(chalk.yellow(`    DSL extraction failed: ${(err as Error).message}`));
     }
   }
 
-  // Git Worktree — auto-skip for frontend repos
+  // ── Git Worktree (auto-skip for frontend repos) ────────────────────────────
   const isFrontendRepo = isFrontendDeps(context.dependencies ?? []);
   const skipWorktreeForRepo = cliOpts.worktree
     ? false
@@ -143,7 +201,7 @@ export async function runSingleRepoPipelineInWorkspace(opts: {
     console.log(chalk.gray(`  [${repoName}] Skipping worktree${isFrontendRepo ? " (frontend repo)" : ""}.`));
   }
 
-  // Save Spec
+  // ── Save Spec ──────────────────────────────────────────────────────────────
   const specsDir = path.join(workingDir, "specs");
   await fs.ensureDir(specsDir);
   const featureSlug = slugify(idea);
@@ -158,55 +216,158 @@ export async function runSingleRepoPipelineInWorkspace(opts: {
     console.log(chalk.green(`    DSL saved: ${path.relative(repoAbsPath, savedDslFile)}`));
   }
 
-  // Code Generation
+  // ── Code Generation (CRITICAL: failure or 0 files = repo failed) ───────────
   console.log(chalk.blue(`  [${repoName}] Running code generation (mode: ${codegenMode})...`));
+  runLogger.stageStart("codegen", { mode: codegenMode });
+  let generatedFiles: string[] = [];
   try {
     const codegen = new CodeGenerator(codegenProvider, codegenMode);
-    await codegen.generateCode(specFile, workingDir, context, {
+    generatedFiles = await codegen.generateCode(specFile, workingDir, context, {
       auto: true,
       dslFilePath: savedDslFile ?? undefined,
       repoType: detectedRepoType,
+      maxConcurrency: opts.maxCodegenConcurrency,
+      injectFixHistory: opts.injectFixHistory,
+      fixHistoryInjectMax: opts.fixHistoryInjectMax,
     });
-    console.log(chalk.green(`    Code generation complete.`));
+    runLogger.stageEnd("codegen", { filesGenerated: generatedFiles.length });
   } catch (err) {
-    console.log(chalk.yellow(`    Code generation failed: ${(err as Error).message}`));
+    const msg = (err as Error).message;
+    runLogger.stageFail("codegen", msg);
+    runLogger.finish();
+    console.error(chalk.red(`    ✘ Code generation failed: ${msg}`));
+    return {
+      success: false,
+      failureReason: `codegen failed: ${msg}`,
+      specFile,
+      dsl: extractedDsl,
+      generatedFiles: [],
+      runId,
+    };
   }
 
-  // Test Generation
+  // claude-code mode returns [] by design (the claude CLI writes files itself).
+  // Only treat empty as failure when we're in api mode where we expect a list.
+  if (generatedFiles.length === 0 && codegenMode === "api") {
+    const msg = "Code generation produced 0 files (likely planning step returned empty filePlan)";
+    runLogger.stageFail("codegen", msg);
+    runLogger.finish();
+    console.error(chalk.red(`    ✘ ${msg}`));
+    return {
+      success: false,
+      failureReason: msg,
+      specFile,
+      dsl: extractedDsl,
+      generatedFiles: [],
+      runId,
+    };
+  }
+
+  console.log(chalk.green(`    Code generation complete (${generatedFiles.length} file(s)).`));
+
+  // ── Import Verification + Auto-Fix ─────────────────────────────────────────
+  // Same two-stage repair flow as single-repo: deterministic DSL stubs + AI fallback.
+  if (generatedFiles.length > 0) {
+    runLogger.stageStart("import_verify");
+    try {
+      const absFiles = generatedFiles.map((f) =>
+        path.isAbsolute(f) ? f : path.join(workingDir, f)
+      );
+      const importReport = await verifyImports(absFiles, workingDir);
+      printImportVerificationReport(repoName, importReport);
+      runLogger.stageEnd("import_verify", {
+        totalImports: importReport.totalImports,
+        broken: importReport.brokenImports.length,
+        external: importReport.externalImports,
+      });
+
+      if (importReport.brokenImports.length > 0) {
+        runLogger.stageStart("import_fix");
+        try {
+          const fixReport = await runImportFix({
+            brokenImports: importReport.brokenImports,
+            dsl: extractedDsl,
+            repoRoot: workingDir,
+            generatedFilePaths: absFiles,
+            provider: codegenProvider,
+            runId,
+            recordHistory: true,
+          });
+          printFixReport(repoName, fixReport);
+          runLogger.stageEnd("import_fix", {
+            deterministic: fixReport.deterministicCount,
+            aiFixed: fixReport.aiFixedCount,
+            applied: fixReport.applied.length,
+            unresolved: fixReport.unresolvedCount,
+          });
+
+          if (fixReport.applied.length > 0) {
+            console.log(chalk.blue(`\n    Re-running import verifier after fixes...`));
+            const reverifyReport = await verifyImports(absFiles, workingDir);
+            printImportVerificationReport(`${repoName} (after fix)`, reverifyReport);
+          }
+        } catch (err) {
+          runLogger.stageFail("import_fix", (err as Error).message);
+          console.log(chalk.yellow(`    Import auto-fix failed: ${(err as Error).message}`));
+        }
+      }
+    } catch (err) {
+      runLogger.stageFail("import_verify", (err as Error).message);
+      console.log(chalk.yellow(`    Import verification failed: ${(err as Error).message}`));
+    }
+  }
+
+  // ── Test Generation (non-fatal) ────────────────────────────────────────────
   if (!cliOpts.skipTests && extractedDsl) {
     console.log(chalk.blue(`  [${repoName}] Generating test skeletons...`));
+    runLogger.stageStart("test_gen");
     try {
       const testGen = new TestGenerator(codegenProvider);
       const testFiles = await testGen.generate(extractedDsl, workingDir);
+      runLogger.stageEnd("test_gen", { testFiles: testFiles.length });
       console.log(chalk.green(`    ${testFiles.length} test file(s) generated.`));
     } catch (err) {
+      runLogger.stageFail("test_gen", (err as Error).message);
       console.log(chalk.yellow(`    Test generation failed: ${(err as Error).message}`));
     }
   }
 
-  // Error Feedback
+  // ── Error Feedback (non-fatal) ─────────────────────────────────────────────
   if (!cliOpts.skipErrorFeedback) {
+    runLogger.stageStart("error_feedback");
     try {
       await runErrorFeedback(codegenProvider, workingDir, extractedDsl, { maxCycles: 1 });
+      runLogger.stageEnd("error_feedback");
     } catch (err) {
+      runLogger.stageFail("error_feedback", (err as Error).message);
       console.log(chalk.yellow(`    Error feedback failed: ${(err as Error).message}`));
     }
   }
 
-  // Code Review
+  // ── Code Review (non-fatal) ────────────────────────────────────────────────
   if (!cliOpts.skipReview) {
     console.log(chalk.blue(`  [${repoName}] Running code review...`));
+    runLogger.stageStart("review");
     try {
       const reviewer = new CodeReviewer(specProvider, workingDir);
       const reviewResult = await reviewer.reviewCode(finalSpec);
       await accumulateReviewKnowledge(specProvider, repoAbsPath, reviewResult);
+      runLogger.stageEnd("review");
       console.log(chalk.green(`    Code review complete.`));
     } catch (err) {
+      runLogger.stageFail("review", (err as Error).message);
       console.log(chalk.yellow(`    Code review failed: ${(err as Error).message}`));
     }
   }
 
-  return { dsl: extractedDsl, specFile };
+  runLogger.finish();
+  return {
+    success: true,
+    specFile,
+    dsl: extractedDsl,
+    generatedFiles,
+    runId,
+  };
 }
 
 // ─── Multi-repo pipeline ────────────────────────────────────────────────────
@@ -227,7 +388,7 @@ export async function runMultiRepoPipeline(
   const specApiKey = await resolveApiKey(specProviderName, opts.key as string | undefined);
   const specProvider = createProvider(specProviderName, specApiKey, specModelName);
 
-  const codegenMode: CodeGenMode = ((opts.codegen as string) as CodeGenMode) || config.codegen || "claude-code";
+  const codegenMode: CodeGenMode = ((opts.codegen as string) as CodeGenMode) || config.codegen || "api";
   const codegenProviderName = (opts.codegenProvider as string) || config.codegenProvider || specProviderName;
   const codegenModelName = (opts.codegenModel as string) || config.codegenModel || DEFAULT_MODELS[codegenProviderName];
   const codegenApiKey =
@@ -400,7 +561,7 @@ export async function runMultiRepoPipeline(
     }
 
     try {
-      const { dsl, specFile } = await runSingleRepoPipelineInWorkspace({
+      const repoResult = await runSingleRepoPipelineInWorkspace({
         idea: specIdea,
         specProvider,
         specProviderName,
@@ -411,30 +572,134 @@ export async function runMultiRepoPipeline(
         repoName: repoReq.repoName,
         cliOpts: opts,
         contractContextSection,
+        maxCodegenConcurrency: config.maxCodegenConcurrency,
+        injectFixHistory: config.injectFixHistory,
+        fixHistoryInjectMax: config.fixHistoryInjectMax,
       });
 
-      if (repoReq.isContractProvider && dsl) {
-        contractDsls.set(repoReq.repoName, dsl);
+      if (repoResult.success && repoReq.isContractProvider && repoResult.dsl) {
+        contractDsls.set(repoReq.repoName, repoResult.dsl);
         console.log(chalk.green(`    Contract stored for downstream repos.`));
       }
 
-      results.push({ repoName: repoReq.repoName, status: "success", specFile, dsl, repoAbsPath, role: repoReq.role });
-      console.log(chalk.green(`  ✔ ${repoReq.repoName} complete`));
+      if (repoResult.success) {
+        results.push({
+          repoName: repoReq.repoName,
+          status: "success",
+          specFile: repoResult.specFile,
+          dsl: repoResult.dsl,
+          repoAbsPath,
+          role: repoReq.role,
+          generatedFiles: repoResult.generatedFiles,
+          runId: repoResult.runId,
+        });
+        console.log(chalk.green(`  ✔ ${repoReq.repoName} complete (${repoResult.generatedFiles.length} files, runId: ${repoResult.runId})`));
+      } else {
+        results.push({
+          repoName: repoReq.repoName,
+          status: "failed",
+          specFile: repoResult.specFile,
+          dsl: repoResult.dsl,
+          repoAbsPath,
+          role: repoReq.role,
+          generatedFiles: [],
+          failureReason: repoResult.failureReason,
+          runId: repoResult.runId,
+        });
+        console.error(chalk.red(`  ✘ ${repoReq.repoName} failed: ${repoResult.failureReason ?? "unknown error"}`));
+        console.error(chalk.gray(`     debug: cd ${repoAbsPath} && ai-spec logs ${repoResult.runId}`));
+      }
     } catch (err) {
-      console.error(chalk.red(`  ✘ ${repoReq.repoName} failed: ${(err as Error).message}`));
-      results.push({ repoName: repoReq.repoName, status: "failed", specFile: null, dsl: null, repoAbsPath, role: repoReq.role });
+      // Unexpected exception (not a stage-level failure caught inside the workspace pipeline).
+      console.error(chalk.red(`  ✘ ${repoReq.repoName} failed unexpectedly: ${(err as Error).message}`));
+      results.push({
+        repoName: repoReq.repoName,
+        status: "failed",
+        specFile: null,
+        dsl: null,
+        repoAbsPath,
+        role: repoReq.role,
+        generatedFiles: [],
+        failureReason: `unexpected exception: ${(err as Error).message}`,
+      });
     }
   }
 
+  // ── Step W5: Cross-stack contract verification ────────────────────────────
+  // Verify only repos that actually produced files. Skipping repos that failed
+  // earlier prevents the verifier from scanning pre-existing code and producing
+  // misleading "phantom endpoints" reports.
+  const backendWithDsl = results.find(
+    (r) => r.role === "backend" && r.status === "success" && r.dsl && r.generatedFiles.length > 0
+  );
+  const frontendCandidates = results.filter(
+    (r) => r.role === "frontend" || r.role === "mobile"
+  );
+
+  if (backendWithDsl && backendWithDsl.dsl && frontendCandidates.length > 0) {
+    console.log(chalk.blue("\n[W5] Cross-stack contract verification..."));
+    for (const fe of frontendCandidates) {
+      if (fe.status !== "success") {
+        console.log(chalk.gray(
+          `  ⊘ Skipped ${fe.repoName}: repo failed earlier (${fe.failureReason ?? "unknown"})`
+        ));
+        continue;
+      }
+      if (fe.generatedFiles.length === 0) {
+        console.log(chalk.gray(
+          `  ⊘ Skipped ${fe.repoName}: codegen produced 0 files — nothing to verify`
+        ));
+        continue;
+      }
+      try {
+        // Scope verification to files generated in THIS run. Without this,
+        // the verifier scans the entire frontend repo and reports historical
+        // API calls (unrelated to the current feature) as "phantom endpoints",
+        // producing misleading output in mature codebases.
+        const report = await verifyCrossStackContract(
+          backendWithDsl.dsl,
+          fe.repoAbsPath,
+          { scopedFiles: fe.generatedFiles }
+        );
+        printCrossStackReport(fe.repoName, report);
+      } catch (err) {
+        console.log(chalk.yellow(`  ⚠ Verification failed for ${fe.repoName}: ${(err as Error).message}`));
+      }
+    }
+  } else if (frontendCandidates.length > 0 && !backendWithDsl) {
+    console.log(chalk.gray(
+      "\n[W5] Cross-stack verification skipped: no backend repo produced a usable DSL in this run."
+    ));
+  }
+
   // ── Done ──────────────────────────────────────────────────────────────────
-  console.log(chalk.bold.green("\n✔ Multi-repo pipeline complete!"));
+  const successCount = results.filter((r) => r.status === "success").length;
+  const failedCount = results.filter((r) => r.status === "failed").length;
+  const overallOk = failedCount === 0;
+
+  if (overallOk) {
+    console.log(chalk.bold.green("\n✔ Multi-repo pipeline complete!"));
+  } else {
+    console.log(chalk.bold.yellow(`\n⚠ Multi-repo pipeline finished with ${failedCount} failure(s).`));
+  }
   console.log(chalk.gray(`  Workspace: ${workspace.name}`));
   console.log(chalk.gray(`  Requirement: ${idea}`));
+  console.log(chalk.gray(`  Result: ${successCount} success / ${failedCount} failed / ${results.length} total`));
   console.log();
   for (const r of results) {
     const icon = r.status === "success" ? chalk.green("✔") : r.status === "failed" ? chalk.red("✘") : chalk.gray("−");
-    const specInfo = r.specFile ? chalk.gray(` → ${r.specFile}`) : "";
-    console.log(`  ${icon} ${r.repoName} (${r.status})${specInfo}`);
+    if (r.status === "success") {
+      const fileInfo = chalk.gray(` (${r.generatedFiles.length} files)`);
+      const specInfo = r.specFile ? chalk.gray(` → ${r.specFile}`) : "";
+      console.log(`  ${icon} ${r.repoName}${fileInfo}${specInfo}`);
+    } else if (r.status === "failed") {
+      console.log(`  ${icon} ${chalk.red(r.repoName)} — ${chalk.red(r.failureReason ?? "unknown reason")}`);
+      if (r.runId) {
+        console.log(chalk.gray(`     debug: cd ${r.repoAbsPath} && ai-spec logs ${r.runId}`));
+      }
+    } else {
+      console.log(`  ${icon} ${r.repoName} (${r.status})`);
+    }
   }
 
   return results;

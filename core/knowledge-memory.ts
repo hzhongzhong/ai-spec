@@ -73,10 +73,14 @@ const MEMORY_SECTION_MARKER = "## 9. 积累教训";
  * Append review issues to the project constitution as accumulated lessons.
  * Creates the section if it doesn't exist; appends if it does.
  * Deduplicates by checking if a similar lesson already exists.
+ *
+ * @param reviewScore - The review score (0-10) at time of appending, embedded in each entry
+ *                      for future auditability ("was this lesson from a good or bad run?").
  */
 export async function appendLessonsToConstitution(
   projectRoot: string,
-  issues: ReviewIssue[]
+  issues: ReviewIssue[],
+  reviewScore?: number
 ): Promise<void> {
   if (issues.length === 0) return;
 
@@ -85,8 +89,37 @@ export async function appendLessonsToConstitution(
   try {
     content = await fs.readFile(constitutionPath, "utf-8");
   } catch {
-    console.log(chalk.gray("  No constitution file — skipping knowledge memory."));
-    return;
+    // No project-level constitution exists. This can happen when:
+    //   - ContextLoader reported "Constitution: found" based on a GLOBAL constitution
+    //     merged into the prompt, while the project itself has no file.
+    //   - The repo was never run through `ai-spec init`.
+    //
+    // Silently skipping accumulation means knowledge memory goes dark for this repo,
+    // so instead we create a minimal stub that subsequent runs can build on top of.
+    const stub = [
+      "# Project Constitution",
+      "",
+      "> Auto-generated stub. Run `ai-spec init` to populate §1–§8 with project-specific rules.",
+      "> §9 below is automatically accumulated from code review issues.",
+      "",
+      MEMORY_SECTION_HEADER.trim(),
+      "",
+    ].join("\n");
+    try {
+      await fs.writeFile(constitutionPath, stub, "utf-8");
+      content = stub;
+      console.log(
+        chalk.cyan(`  Created project constitution stub at ${constitutionPath}`)
+      );
+      console.log(
+        chalk.gray(`  (knowledge memory needs a project-level file to persist §9 lessons)`)
+      );
+    } catch (err) {
+      console.log(
+        chalk.yellow(`  ⚠ Could not create constitution stub: ${(err as Error).message}`)
+      );
+      return;
+    }
   }
 
   // Check if section 9 already exists
@@ -105,7 +138,8 @@ export async function appendLessonsToConstitution(
                   issue.category === "performance" ? "⚡" :
                   issue.category === "bug" ? "🐛" :
                   issue.category === "pattern" ? "📐" : "📝";
-    newEntries.push(`- ${badge} **[${date}]** ${issue.description}`);
+    const scoreTag = reviewScore !== undefined ? ` (r:${reviewScore.toFixed(1)})` : "";
+    newEntries.push(`- ${badge} **[${date}]**${scoreTag} ${issue.description}`);
   }
 
   if (newEntries.length === 0) {
@@ -203,6 +237,10 @@ export async function appendDirectLesson(
 
 /**
  * Full knowledge memory flow: extract issues from review → append to constitution.
+ *
+ * Quality gate: if the review score is ≥ 9.0, the run was excellent and the
+ * extracted issues are likely minor style nits. Skip accumulation to prevent
+ * constitution noise from near-perfect runs.
  */
 export async function accumulateReviewKnowledge(
   provider: AIProvider,
@@ -211,18 +249,29 @@ export async function accumulateReviewKnowledge(
 ): Promise<void> {
   console.log(chalk.blue("\n─── Knowledge Memory ────────────────────────────"));
 
+  // Extract review score for quality gate and lesson annotation
+  const reviewScoreMatch = reviewText.match(/Score:\s*(\d+(?:\.\d+)?)\s*\/\s*10/i);
+  const reviewScore = reviewScoreMatch ? parseFloat(reviewScoreMatch[1]) : undefined;
+
+  // Quality gate: excellent runs (≥ 9.0) rarely produce actionable lessons
+  if (reviewScore !== undefined && reviewScore >= 9.0) {
+    console.log(chalk.gray(`  Review score ${reviewScore}/10 — run quality excellent, skipping constitution update.`));
+    return;
+  }
+
   const issues = extractIssuesFromReview(reviewText);
   if (issues.length === 0) {
     console.log(chalk.gray("  No actionable issues found in review. Skipping."));
     return;
   }
 
-  console.log(chalk.gray(`  Extracted ${issues.length} issue(s) from review:`));
+  const scoreLabel = reviewScore !== undefined ? ` (review: ${reviewScore}/10)` : "";
+  console.log(chalk.gray(`  Extracted ${issues.length} issue(s) from review${scoreLabel}:`));
   for (const issue of issues) {
     console.log(chalk.gray(`    - [${issue.category}] ${issue.description.slice(0, 80)}`));
   }
 
-  await appendLessonsToConstitution(projectRoot, issues);
+  await appendLessonsToConstitution(projectRoot, issues, reviewScore);
 }
 
 // ─── Auto-Consolidation ──────────────────────────────────────────────────────

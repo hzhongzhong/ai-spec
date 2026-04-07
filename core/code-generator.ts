@@ -23,6 +23,7 @@ import {
 import { topoSortLayerTasks, printTaskProgress, LAYER_ICONS } from "./codegen/topo-sort";
 import { estimateTokens, getDefaultBudget } from "./token-budget";
 import { startSpinner } from "./cli-ui";
+import { loadFixHistory, buildHallucinationAvoidanceSection } from "./fix-history";
 
 // Re-export public symbols for backward compatibility
 export { extractBehavioralContract } from "./codegen/helpers";
@@ -41,6 +42,20 @@ export interface CodeGenOptions {
   dslFilePath?: string;
   /** Repo language type — selects the appropriate codegen system prompt */
   repoType?: string;
+  /**
+   * Maximum number of tasks that can run concurrently within a single batch
+   * (api mode only). A batch larger than this value is split into sequential
+   * sub-chunks, each running maxConcurrency tasks in parallel. Default: 3.
+   */
+  maxConcurrency?: number;
+  /**
+   * When true, prior hallucination patterns from `.ai-spec-fix-history.json`
+   * are injected into the codegen prompt as a "DO NOT REPEAT" section.
+   * Default: true when the ledger exists.
+   */
+  injectFixHistory?: boolean;
+  /** Max number of past hallucination patterns to inject. Default: 10 */
+  fixHistoryInjectMax?: number;
 }
 
 export class CodeGenerator {
@@ -268,8 +283,27 @@ export class CodeGenerator {
       console.log(chalk.gray(`  Frontend context: ${fctx.framework} / ${fctx.httpClient} | hooks:${fctx.hookFiles.length} stores:${fctx.storeFiles.length}`));
     }
 
+    // Inject past hallucination patterns so the AI learns from this project's fix history.
+    // Opt out via CodeGenOptions.injectFixHistory = false.
+    let fixHistorySection = "";
+    if (options.injectFixHistory !== false) {
+      try {
+        const history = await loadFixHistory(workingDir);
+        const section = buildHallucinationAvoidanceSection(history, {
+          maxItems: options.fixHistoryInjectMax ?? 10,
+        });
+        if (section) {
+          fixHistorySection = `\n${section}\n`;
+          const patternCount = (section.match(/❌ Do NOT/g) ?? []).length;
+          console.log(chalk.cyan(`  ✓ Injected ${patternCount} prior hallucination pattern(s) from fix-history`));
+        }
+      } catch {
+        // Non-fatal: if the ledger is broken, just skip injection
+      }
+    }
+
     // Token budget check — warn if context sections are large
-    const allContextText = spec + constitutionSection + dslSection + frontendSection + installedPackagesSection + sharedConfigSection;
+    const allContextText = spec + constitutionSection + dslSection + frontendSection + installedPackagesSection + sharedConfigSection + fixHistorySection;
     const estimatedTokenCount = estimateTokens(allContextText);
     const budget = getDefaultBudget(this.provider.providerName);
     if (estimatedTokenCount > budget * 0.7) {
@@ -292,7 +326,7 @@ export class CodeGenerator {
     // Use tasks if available for finer-grained generation with resume support
     const tasks = await loadTasksForSpec(specFilePath);
     if (tasks && tasks.length > 0) {
-      return this.runApiModeWithTasks(spec, tasks, specFilePath, workingDir, constitutionSection + dslSection + installedPackagesSection, frontendSection, sharedConfigSection, options, systemPrompt, context);
+      return this.runApiModeWithTasks(spec, tasks, specFilePath, workingDir, constitutionSection + dslSection + installedPackagesSection + fixHistorySection, frontendSection, sharedConfigSection, options, systemPrompt, context);
     }
 
     // Fallback: plan-then-generate
@@ -306,7 +340,7 @@ IMPORTANT: Check the "Frontend Project Context" section below. Extend existing h
 
 === Feature Spec ===
 ${spec}
-${constitutionSection}${dslSection}${frontendSection}${installedPackagesSection}${sharedConfigSection}
+${constitutionSection}${dslSection}${frontendSection}${installedPackagesSection}${sharedConfigSection}${fixHistorySection}
 === Project Context ===
 ${contextSummary}
 
@@ -336,7 +370,7 @@ Output ONLY a valid JSON array:
       console.log(`  ${icon} ${item.file}: ${chalk.gray(item.description)}`);
     });
 
-    const { files } = await this.generateFiles(filePlan, spec, workingDir, constitutionSection + dslSection + frontendSection + installedPackagesSection, systemPrompt);
+    const { files } = await this.generateFiles(filePlan, spec, workingDir, constitutionSection + dslSection + frontendSection + installedPackagesSection + fixHistorySection, systemPrompt);
     return files;
   }
 
@@ -524,24 +558,39 @@ Output ONLY a valid JSON array:
 
       // Partition tasks into topological batches (respects dependencies field).
       // Each batch runs in parallel; batches run sequentially.
+      // Additionally, each batch is chunked by maxConcurrency to prevent
+      // rate-limit errors when a batch contains many independent tasks.
       const taskBatches = topoSortLayerTasks(layerTasks);
       const layerResults: TaskResult[] = [];
+      const maxConcurrency = Math.max(1, options.maxConcurrency ?? 3);
 
       for (const batch of taskBatches) {
         const batchIsParallel = batch.length > 1;
-        const batchResultPromises = batch.map((task) => executeTask(task, batchIsParallel));
-        const settled = await Promise.allSettled(batchResultPromises);
         const batchResults: TaskResult[] = [];
-        for (let i = 0; i < settled.length; i++) {
-          const outcome = settled[i];
-          if (outcome.status === "fulfilled") {
-            batchResults.push(outcome.value);
-          } else {
-            const task = batch[i];
-            console.log(chalk.yellow(`  ⚠ ${task.id} threw unexpectedly: ${outcome.reason?.message ?? outcome.reason}`));
-            batchResults.push({ task, files: [], createdFiles: [], success: 0, total: 0, impliesRegistration: false });
+
+        // Split batch into chunks of at most `maxConcurrency` tasks.
+        // Each chunk runs in parallel; chunks run sequentially within the batch.
+        for (let chunkStart = 0; chunkStart < batch.length; chunkStart += maxConcurrency) {
+          const chunk = batch.slice(chunkStart, chunkStart + maxConcurrency);
+          if (batchIsParallel && batch.length > maxConcurrency) {
+            const chunkIdx = Math.floor(chunkStart / maxConcurrency) + 1;
+            const totalChunks = Math.ceil(batch.length / maxConcurrency);
+            console.log(chalk.gray(`    ↳ chunk ${chunkIdx}/${totalChunks} (${chunk.length} tasks, concurrency cap: ${maxConcurrency})`));
+          }
+          const chunkResultPromises = chunk.map((task) => executeTask(task, batchIsParallel));
+          const settled = await Promise.allSettled(chunkResultPromises);
+          for (let i = 0; i < settled.length; i++) {
+            const outcome = settled[i];
+            if (outcome.status === "fulfilled") {
+              batchResults.push(outcome.value);
+            } else {
+              const task = chunk[i];
+              console.log(chalk.yellow(`  ⚠ ${task.id} threw unexpectedly: ${outcome.reason?.message ?? outcome.reason}`));
+              batchResults.push({ task, files: [], createdFiles: [], success: 0, total: 0, impliesRegistration: false });
+            }
           }
         }
+
         layerResults.push(...batchResults);
         // Update cache after each batch so the next batch sees the exports.
         await updateCacheFromBatch(batchResults);

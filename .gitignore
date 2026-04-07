@@ -4,6 +4,8 @@ dist/
 *.log
 .env
 .ai-spec-keys.json
+.ai-spec.json
+.ai-spec-workspace.json
 .claude/
 .npmrc
 RELEASE_LOG.md

@@ -2,8 +2,7 @@ import * as fs from "fs-extra";
 import * as path from "path";
 import chalk from "chalk";
 import { RunLog, reconstructRunLogFromJsonl } from "./run-logger";
-
-const LOG_DIR = ".ai-spec-logs";
+import { DEFAULT_LOG_DIR } from "./config-defaults";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,7 +44,7 @@ export interface TrendReport {
  * Silently skips unreadable / corrupt files.
  */
 export async function loadRunLogs(workingDir: string): Promise<RunLog[]> {
-  const logDir = path.join(workingDir, LOG_DIR);
+  const logDir = path.join(workingDir, DEFAULT_LOG_DIR);
   if (!(await fs.pathExists(logDir))) return [];
 
   const files = await fs.readdir(logDir);
@@ -255,7 +254,7 @@ export function printTrendReport(report: TrendReport, workingDir: string): void 
   }
 
   // ── Footer ────────────────────────────────────────────────────────
-  const logRelDir = path.relative(workingDir, path.join(workingDir, LOG_DIR));
+  const logRelDir = path.relative(workingDir, path.join(workingDir, DEFAULT_LOG_DIR));
   console.log(chalk.gray(`\n  ${entries.length} run(s) shown  ·  logs: ${logRelDir}/`));
   console.log(chalk.cyan("─".repeat(63)));
 }

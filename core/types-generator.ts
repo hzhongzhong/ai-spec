@@ -23,7 +23,7 @@ const PRIMITIVE_MAP: Record<string, string> = {
   any: "unknown",
 };
 
-function mapFieldType(raw: string): string {
+export function mapFieldType(raw: string): string {
   const trimmed = raw.trim();
   // Array types: "String[]" or "User[]"
   if (trimmed.endsWith("[]")) {
@@ -39,7 +39,7 @@ function mapFieldType(raw: string): string {
 
 // ─── Model → Interface ────────────────────────────────────────────────────────
 
-function renderModelInterface(
+export function renderModelInterface(
   name: string,
   fields: ModelField[],
   description?: string

@@ -2,7 +2,9 @@ import { Command } from "commander";
 import * as path from "path";
 import * as fs from "fs-extra";
 import chalk from "chalk";
-import { createProvider, DEFAULT_MODELS, SUPPORTED_PROVIDERS } from "../../core/spec-generator";
+import { input, select, confirm } from "@inquirer/prompts";
+import { RepoRole } from "../../core/workspace-loader";
+import { createProvider, DEFAULT_MODELS, SUPPORTED_PROVIDERS, AIProvider } from "../../core/spec-generator";
 import { ContextLoader } from "../../core/context-loader";
 import { ConstitutionGenerator, CONSTITUTION_FILE } from "../../core/constitution-generator";
 import { ConstitutionConsolidator } from "../../core/constitution-consolidator";
@@ -16,12 +18,201 @@ import {
   buildGlobalConstitutionPrompt,
 } from "../../prompts/global-constitution.prompt";
 import { loadConfig, resolveApiKey } from "../utils";
-import { loadIndex, ProjectEntry } from "../../core/project-index";
+import { loadIndex, runScan, saveIndex, ProjectEntry } from "../../core/project-index";
+import { detectRepoType } from "../../core/workspace-loader";
+import {
+  RegisteredRepo,
+  getRegisteredRepos,
+  registerRepo,
+  REPO_STORE_FILE,
+} from "../../core/repo-store";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const ROLE_LABELS: Record<RepoRole, string> = {
+  frontend: "frontend",
+  backend: "backend",
+  mobile: "mobile",
+  shared: "shared",
+};
+
+/**
+ * Prompt user to select a repo role.
+ */
+async function promptRepoRole(): Promise<RepoRole> {
+  return select<RepoRole>({
+    message: "What type of repo is this?",
+    choices: [
+      { name: "Frontend", value: "frontend" },
+      { name: "Backend", value: "backend" },
+      { name: "Mobile", value: "mobile" },
+      { name: "Shared / Other", value: "shared" },
+    ],
+  });
+}
+
+/**
+ * Prompt user for a repo absolute path with validation.
+ */
+async function promptRepoPath(role: RepoRole): Promise<string> {
+  const label = ROLE_LABELS[role];
+  const raw = await input({
+    message: `Enter your ${label} repo path (absolute path):`,
+    validate: (v) => {
+      const trimmed = v.trim();
+      if (trimmed.length === 0) return "Path cannot be empty";
+      if (!path.isAbsolute(trimmed)) return "Please provide an absolute path";
+      return true;
+    },
+  });
+
+  // Strip shell escape backslashes (e.g. "文稿\ -\ hongzhong" → "文稿 - hongzhong")
+  const cleaned = raw.trim().replace(/\\ /g, " ");
+  const resolved = path.resolve(cleaned);
+  if (!(await fs.pathExists(resolved))) {
+    console.log(chalk.red(`  Path does not exist: ${resolved}`));
+    return promptRepoPath(role);
+  }
+  const stat = await fs.stat(resolved);
+  if (!stat.isDirectory()) {
+    console.log(chalk.red(`  Not a directory: ${resolved}`));
+    return promptRepoPath(role);
+  }
+  return resolved;
+}
+
+/**
+ * Register a single repo: detect type, generate project constitution, return entry.
+ * @param roleOverride — user-selected role (takes priority over auto-detection)
+ */
+async function registerSingleRepo(
+  repoPath: string,
+  provider: AIProvider,
+  roleOverride?: RepoRole
+): Promise<RegisteredRepo> {
+  const { type, role: detectedRole } = await detectRepoType(repoPath);
+  const role = roleOverride ?? detectedRole;
+  const repoName = path.basename(repoPath);
+
+  console.log(chalk.gray(`    Detected: ${repoName} → ${type} (${role})`));
+
+  // Generate project constitution
+  const constitutionPath = path.join(repoPath, CONSTITUTION_FILE);
+  let hasConstitution = await fs.pathExists(constitutionPath);
+
+  if (!hasConstitution) {
+    console.log(chalk.blue(`    Generating project constitution for ${repoName}...`));
+    try {
+      const gen = new ConstitutionGenerator(provider);
+      const content = await gen.generate(repoPath);
+      await gen.saveConstitution(repoPath, content);
+      hasConstitution = true;
+      console.log(chalk.green(`    ✔ Constitution saved: ${constitutionPath}`));
+    } catch (err) {
+      console.log(chalk.yellow(`    ⚠ Constitution generation failed: ${(err as Error).message}`));
+    }
+  } else {
+    console.log(chalk.green(`    ✔ Constitution already exists: ${constitutionPath}`));
+  }
+
+  const entry: RegisteredRepo = {
+    name: repoName,
+    path: repoPath,
+    type,
+    role,
+    hasConstitution,
+    registeredAt: new Date().toISOString(),
+  };
+
+  await registerRepo(entry);
+  return entry;
+}
+
+/**
+ * Build per-project summaries for global constitution generation from registered repos.
+ */
+async function buildProjectSummaries(
+  repos: RegisteredRepo[]
+): Promise<Array<{ name: string; summary: string }>> {
+  const summaries: Array<{ name: string; summary: string }> = [];
+
+  for (const repo of repos) {
+    if (!(await fs.pathExists(repo.path))) continue;
+
+    const lines: string[] = [
+      `Type: ${repo.type} (${repo.role})`,
+    ];
+
+    // Load tech stack from context
+    try {
+      const loader = new ContextLoader(repo.path);
+      const ctx = await loader.loadProjectContext();
+      lines.push(`Tech stack: ${ctx.techStack.join(", ") || "unknown"}`);
+      lines.push(`Dependencies: ${ctx.dependencies.slice(0, 20).join(", ")}`);
+    } catch {
+      lines.push(`Tech stack: ${repo.type}`);
+    }
+
+    // Include constitution excerpt if available
+    if (repo.hasConstitution) {
+      try {
+        const constitutionPath = path.join(repo.path, CONSTITUTION_FILE);
+        const raw = await fs.readFile(constitutionPath, "utf-8");
+        lines.push("", "Constitution excerpt:", raw.slice(0, 2000));
+      } catch { /* skip */ }
+    }
+
+    summaries.push({ name: repo.name, summary: lines.join("\n") });
+  }
+
+  return summaries;
+}
+
+/**
+ * Generate or update global constitution based on all registered repos.
+ */
+async function generateGlobalConstitution(
+  provider: AIProvider,
+  repos: RegisteredRepo[],
+  currentDir: string
+): Promise<void> {
+  console.log(chalk.blue("\n─── Generating Global Constitution ──────────────"));
+  console.log(chalk.gray(`  Based on ${repos.length} registered repo(s)`));
+
+  const summaries = await buildProjectSummaries(repos);
+  if (summaries.length === 0) {
+    console.log(chalk.yellow("  No valid repos found — skipping global constitution."));
+    return;
+  }
+
+  const prompt = buildGlobalConstitutionPrompt(summaries);
+  let globalConstitution: string;
+  try {
+    globalConstitution = await provider.generate(prompt, globalConstitutionSystemPrompt);
+  } catch (err) {
+    console.error(chalk.red(`  ✘ Failed to generate global constitution: ${(err as Error).message}`));
+    return;
+  }
+
+  const saved = await saveGlobalConstitution(globalConstitution, currentDir);
+  console.log(chalk.green(`  ✔ Global constitution saved: ${saved}`));
+  console.log(chalk.gray("  Project constitutions will be merged with this at runtime."));
+
+  // Preview
+  const lines = globalConstitution.split("\n");
+  console.log(chalk.bold("\n  Preview:"));
+  console.log(chalk.gray(lines.slice(0, 10).join("\n")));
+  if (lines.length > 10) {
+    console.log(chalk.gray(`  ... (${lines.length} lines total)`));
+  }
+}
+
+// ─── Command: init ───────────────────────────────────────────────────────────
 
 export function registerInit(program: Command): void {
   program
     .command("init")
-    .description(`Analyze codebase and generate Project Constitution (${CONSTITUTION_FILE})`)
+    .description("Setup workspace: register repos, generate constitutions")
     .option(
       "--provider <name>",
       `AI provider (${SUPPORTED_PROVIDERS.join("|")})`,
@@ -29,15 +220,34 @@ export function registerInit(program: Command): void {
     )
     .option("--model <name>", "Model name")
     .option("-k, --key <apiKey>", "API key")
-    .option("--force", "Overwrite existing constitution")
-    .option(
-      "--global",
-      `Generate a Global Constitution (~/${GLOBAL_CONSTITUTION_FILE}) instead of a project-level one`
-    )
-    .option("--consolidate", "Consolidate §9 accumulated lessons into §1–§8 core rules (prune & rebase)")
+    .option("--force", "Overwrite existing constitutions")
+    .option("--consolidate", "Consolidate §9 accumulated lessons into §1–§8 core rules")
     .option("--dry-run", "Preview consolidation result without writing (use with --consolidate)")
+    .option("--add-repo", "Add a new repo to the registered list")
+    .option("--status", "Show registered repos and constitution status (no changes made)")
     .action(async (opts) => {
       const currentDir = process.cwd();
+
+      // ── --status: show registered repos and constitution health ───────────
+      if (opts.status) {
+        const repos = await getRegisteredRepos();
+        if (repos.length === 0) {
+          console.log(chalk.yellow("\nNo repos registered. Run `ai-spec init` to add repos."));
+          return;
+        }
+        console.log(chalk.bold(`\n─── Registered Repos (${repos.length}) ──────────────────────`));
+        for (const r of repos) {
+          const constitutionIcon = r.hasConstitution ? chalk.green("✔ §C") : chalk.gray("○ §C");
+          const roleColor = r.role === "frontend" ? chalk.green : r.role === "backend" ? chalk.blue : r.role === "mobile" ? chalk.magenta : chalk.gray;
+          const pathExists = await fs.pathExists(r.path);
+          const pathStatus = pathExists ? chalk.gray(r.path) : chalk.red(`${r.path} (not found)`);
+          console.log(`  ${constitutionIcon}  ${roleColor(r.role.padEnd(9))} ${chalk.white(r.name.padEnd(20))} ${pathStatus}`);
+        }
+        console.log(chalk.gray(`\n  Store: ${REPO_STORE_FILE}`));
+        console.log(chalk.gray("  Run `ai-spec init` to add repos or regenerate constitutions."));
+        return;
+      }
+
       const config = await loadConfig(currentDir);
 
       const providerName = opts.provider || config.provider || "gemini";
@@ -68,123 +278,151 @@ export function registerInit(program: Command): void {
         return;
       }
 
-      // ── Global constitution mode ───────────────────────────────────────────
-      if (opts.global) {
-        const existing = await loadGlobalConstitution([currentDir]);
-        if (existing && !opts.force) {
-          console.log(chalk.yellow(`\n  Global constitution already exists at: ${existing.source}`));
-          console.log(chalk.gray("  Use --force to overwrite it."));
-          return;
+      // ── Add-repo shortcut ──────────────────────────────────────────────────
+      if (opts.addRepo) {
+        console.log(chalk.blue("\n─── Register New Repo ──────────────────────────"));
+        const role = await promptRepoRole();
+        const repoPath = await promptRepoPath(role);
+        const entry = await registerSingleRepo(repoPath, provider, role);
+        console.log(chalk.green(`\n  ✔ Repo registered: ${entry.name} (${entry.type} / ${entry.role})`));
+        console.log(chalk.gray(`    Saved to: ${REPO_STORE_FILE}`));
+
+        // Ask if user wants to update global constitution
+        const updateGlobal = await confirm({
+          message: "Update global constitution with this repo's context?",
+          default: true,
+        });
+        if (updateGlobal) {
+          const allRepos = await getRegisteredRepos();
+          await generateGlobalConstitution(provider, allRepos, currentDir);
         }
+        return;
+      }
 
-        console.log(chalk.blue("\n─── Generating Global Constitution ──────────────"));
-        console.log(chalk.gray(`  Provider: ${providerName}/${modelName}`));
+      // ── Full init flow ─────────────────────────────────────────────────────
+      console.log(chalk.blue("\n" + "─".repeat(52)));
+      console.log(chalk.bold("  ai-spec init — Workspace Setup"));
+      console.log(chalk.blue("─".repeat(52)));
+      console.log(chalk.gray(`  Provider: ${providerName}/${modelName}\n`));
 
-        // ── Build per-project summaries ────────────────────────────────────
-        const projectSummaries: Array<{ name: string; summary: string }> = [];
-        const index = await loadIndex(currentDir);
+      const existingRepos = await getRegisteredRepos();
 
-        if (index && index.projects.length > 0) {
-          const active = index.projects.filter((p: ProjectEntry) => !p.missing);
-          console.log(chalk.gray(`  Found project index: ${active.length} project(s) — reading constitutions...`));
+      // ── Step 1: Show existing repos if any ─────────────────────────────────
+      if (existingRepos.length > 0) {
+        console.log(chalk.cyan("  Registered repos:"));
+        for (const r of existingRepos) {
+          const constitutionIcon = r.hasConstitution ? chalk.green("✔") : chalk.gray("○");
+          console.log(chalk.gray(`    ${constitutionIcon} ${r.name} (${r.type} / ${r.role}) → ${r.path}`));
+        }
+        console.log();
+      }
 
-          for (const entry of active) {
-            const absPath = path.join(currentDir, entry.path);
-            const lines: string[] = [
-              `Type: ${entry.type} (${entry.role})`,
-              `Tech stack: ${entry.techStack.join(", ") || "unknown"}`,
-            ];
+      // ── Step 2: Register repos ─────────────────────────────────────────────
+      const action = existingRepos.length > 0
+        ? await select({
+            message: "What would you like to do?",
+            choices: [
+              { name: "Add new repo(s)", value: "add" as const },
+              { name: "Re-generate constitutions for existing repos", value: "regen" as const },
+              { name: "Skip — proceed to global constitution", value: "skip" as const },
+            ],
+          })
+        : "add" as const;
 
-            // Include §1–§6 of project constitution if available (skip §9 lessons)
-            if (entry.hasConstitution) {
-              try {
-                const constitutionPath = path.join(absPath, CONSTITUTION_FILE);
-                const raw = await fs.readFile(constitutionPath, "utf-8");
-                // Take up to first 2000 chars (covers §1–§6 without §9 noise)
-                const excerpt = raw.slice(0, 2000);
-                lines.push("", "Constitution excerpt:", excerpt);
-              } catch { /* skip if unreadable */ }
-            }
+      const newRepos: RegisteredRepo[] = [];
 
-            projectSummaries.push({ name: entry.name, summary: lines.join("\n") });
+      if (action === "add") {
+        let addMore = true;
+        while (addMore) {
+          console.log(chalk.blue(`\n  ── Register Repo #${existingRepos.length + newRepos.length + 1} ──`));
+          const role = await promptRepoRole();
+          const repoPath = await promptRepoPath(role);
+
+          // Check if already registered
+          const alreadyRegistered = [...existingRepos, ...newRepos].find((r) => r.path === repoPath);
+          if (alreadyRegistered) {
+            console.log(chalk.yellow(`    Already registered: ${alreadyRegistered.name}`));
+          } else {
+            const entry = await registerSingleRepo(repoPath, provider, role);
+            newRepos.push(entry);
+            console.log(chalk.green(`    ✔ Registered: ${entry.name}`));
           }
-        } else {
-          // No index — fall back to scanning just the current directory
-          console.log(chalk.yellow("  No project index found. Run `ai-spec scan` first for better results."));
-          console.log(chalk.gray("  Falling back: scanning current directory only..."));
-          const loader = new ContextLoader(currentDir);
-          const ctx = await loader.loadProjectContext();
-          projectSummaries.push({
-            name: path.basename(currentDir),
-            summary: [
-              `Tech stack: ${ctx.techStack.join(", ") || "unknown"}`,
-              `Dependencies: ${ctx.dependencies.slice(0, 20).join(", ")}`,
-            ].join("\n"),
+
+          addMore = await confirm({
+            message: "Add another repo?",
+            default: false,
           });
         }
+      }
 
-        console.log(chalk.gray(`  Generating from ${projectSummaries.length} project(s)...`));
-        const prompt = buildGlobalConstitutionPrompt(projectSummaries);
-        let globalConstitution: string;
-        try {
-          globalConstitution = await provider.generate(prompt, globalConstitutionSystemPrompt);
-        } catch (err) {
-          console.error(chalk.red("  ✘ Failed to generate global constitution:"), err);
-          process.exit(1);
-        }
+      if (action === "regen") {
+        console.log(chalk.blue("\n  Re-generating project constitutions..."));
+        for (const repo of existingRepos) {
+          if (!(await fs.pathExists(repo.path))) {
+            console.log(chalk.yellow(`    ⚠ ${repo.name}: path not found — skipping`));
+            continue;
+          }
 
-        const saved = await saveGlobalConstitution(globalConstitution, currentDir);
-        console.log(chalk.green(`\n  ✔ Global constitution saved: ${saved}`));
-        console.log(chalk.gray("  This will be automatically merged into all project constitutions in this workspace."));
-        console.log(chalk.gray("  Project-level rules always override global rules.\n"));
-        console.log(chalk.bold("  Preview:"));
-        console.log(chalk.gray(globalConstitution.split("\n").slice(0, 12).join("\n")));
-        if (globalConstitution.split("\n").length > 12) {
-          console.log(chalk.gray(`  ... (${globalConstitution.split("\n").length} lines total)`));
+          const constitutionPath = path.join(repo.path, CONSTITUTION_FILE);
+          if ((await fs.pathExists(constitutionPath)) && !opts.force) {
+            console.log(chalk.gray(`    ${repo.name}: constitution exists (use --force to overwrite)`));
+            continue;
+          }
+
+          console.log(chalk.blue(`    ${repo.name}: generating constitution...`));
+          try {
+            const gen = new ConstitutionGenerator(provider);
+            const content = await gen.generate(repo.path);
+            await gen.saveConstitution(repo.path, content);
+            console.log(chalk.green(`    ✔ ${repo.name}: constitution saved`));
+          } catch (err) {
+            console.log(chalk.yellow(`    ⚠ ${repo.name}: failed — ${(err as Error).message}`));
+          }
         }
+      }
+
+      // ── Step 3: Generate/update global constitution ────────────────────────
+      const allRepos = await getRegisteredRepos();
+
+      if (allRepos.length === 0) {
+        console.log(chalk.yellow("\n  No repos registered. Run `ai-spec init` again to add repos."));
         return;
       }
 
-      // ── Project constitution mode (default) ───────────────────────────────
-      const constitutionPath = path.join(currentDir, CONSTITUTION_FILE);
+      const existingGlobal = await loadGlobalConstitution([currentDir]);
+      const shouldGenerateGlobal = !existingGlobal || opts.force || newRepos.length > 0
+        ? true
+        : await confirm({
+            message: "Global constitution exists. Re-generate it?",
+            default: false,
+          });
 
-      if (!opts.force && (await fs.pathExists(constitutionPath))) {
-        console.log(chalk.yellow(`\n  ${CONSTITUTION_FILE} already exists.`));
-        console.log(chalk.gray("  Use --force to overwrite it."));
-        console.log(chalk.gray(`  Or edit it directly: ${constitutionPath}`));
-        return;
+      if (shouldGenerateGlobal) {
+        await generateGlobalConstitution(provider, allRepos, currentDir);
       }
 
-      console.log(chalk.blue("\n─── Generating Project Constitution ─────────────"));
-      console.log(chalk.gray(`  Provider: ${providerName}/${modelName}`));
-      console.log(chalk.gray("  Analyzing codebase..."));
+      // ── Done ───────────────────────────────────────────────────────────────
+      console.log(chalk.bold.green("\n✔ Init complete!"));
+      console.log(chalk.gray(`  Repos registered: ${allRepos.length}`));
+      for (const r of allRepos) {
+        const icon = r.hasConstitution ? chalk.green("✔") : chalk.gray("○");
+        console.log(chalk.gray(`    ${icon} ${r.name} (${r.type}/${r.role})`));
+      }
+      console.log(chalk.gray(`\n  Repo store: ${REPO_STORE_FILE}`));
+      console.log(chalk.gray(`  Next step: ai-spec create "your feature idea"`));
 
-      const generator = new ConstitutionGenerator(provider);
-
-      let constitution: string;
+      // ── Auto-scan: silently update project index ───────────────────────────
       try {
-        constitution = await generator.generate(currentDir);
-      } catch (err) {
-        console.error(chalk.red("  ✘ Failed to generate constitution:"), err);
-        process.exit(1);
+        const { index, added, updated: upd, nowMissing } = await runScan(currentDir, 2);
+        await saveIndex(currentDir, index);
+        const changes = added.length + upd.length + nowMissing.length;
+        if (changes > 0) {
+          console.log(chalk.gray(`  Project index updated (${index.projects.filter((p: ProjectEntry) => !p.missing).length} projects found).`));
+        }
+      } catch {
+        // scan failure is non-blocking
       }
 
-      const saved = await generator.saveConstitution(currentDir, constitution);
-
-      const globalResult = await loadGlobalConstitution([path.dirname(currentDir)]);
-      if (globalResult) {
-        console.log(chalk.cyan(`\n  ℹ Global constitution detected: ${globalResult.source}`));
-        console.log(chalk.gray("    It will be merged with this project constitution at runtime."));
-        console.log(chalk.gray("    Project rules take priority over global rules."));
-      }
-
-      console.log(chalk.green(`\n  ✔ Constitution saved: ${saved}`));
-      console.log(chalk.gray("  This file will be automatically used in all future `ai-spec create` runs."));
-      console.log(chalk.gray("  Edit it to add custom rules or red lines for your project.\n"));
-      console.log(chalk.bold("  Preview:"));
-      console.log(chalk.gray(constitution.split("\n").slice(0, 15).join("\n")));
-      if (constitution.split("\n").length > 15) {
-        console.log(chalk.gray(`  ... (${constitution.split("\n").length} lines total)`));
-      }
+      process.exit(0);
     });
 }

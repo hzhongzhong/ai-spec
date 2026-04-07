@@ -1,16 +1,15 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
-import axios from "axios";
 import { ProxyAgent } from "undici";
 import { specPrompt } from "../prompts/spec.prompt";
 import { ProjectContext } from "./context-loader";
 import { withReliability } from "./provider-utils";
 
 // ─── Proxy Helper ─────────────────────────────────────────────────────────────
-// 仅用于 Gemini：其他 SDK（Anthropic / OpenAI）会自动读取 HTTPS_PROXY。
 // Gemini SDK 使用 Node.js 原生 fetch（undici），不会自动读代理环境变量，
 // 需要手动创建 ProxyAgent 并通过 fetchOptions 注入。
+// Anthropic SDK (node-fetch) 也不会自动读代理环境变量。
 // 这是 in-process 级别的配置，完全不影响 execSync 启动的子进程（如 claude CLI）。
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,6 +46,8 @@ export interface ProviderMeta {
   models: string[];
   /** Environment variable name for the API key */
   envKey: string;
+  /** Fallback env var names checked if envKey is not set */
+  fallbackEnvKeys?: string[];
   /**
    * Base URL for OpenAI-compatible providers.
    * Undefined means the provider has its own SDK (Gemini / Claude).
@@ -72,6 +73,8 @@ export const PROVIDER_CATALOG: Record<string, ProviderMeta> = {
     description: "小米 MiMo — mimo-v2-pro (Anthropic-compatible API)",
     models: ["mimo-v2-pro"],
     envKey: "MIMO_API_KEY",
+    // Fallback env var — MiMo's token plan uses ANTHROPIC_AUTH_TOKEN
+    fallbackEnvKeys: ["ANTHROPIC_AUTH_TOKEN"],
     // baseURL not used — MiMo has a dedicated provider class
   },
   gemini: {
@@ -114,10 +117,10 @@ export const PROVIDER_CATALOG: Record<string, ProviderMeta> = {
   },
   deepseek: {
     displayName: "DeepSeek",
-    description: "DeepSeek — V3 (chat) / R1 (reasoning)",
+    description: "DeepSeek V3.2 (chat) / R1 (reasoner) — alias auto-tracks latest stable",
     models: [
-      "deepseek-chat",       // DeepSeek-V3
-      "deepseek-reasoner",   // DeepSeek-R1
+      "deepseek-chat",       // V3.2 (alias auto-updates as DeepSeek releases new versions)
+      "deepseek-reasoner",   // R1 (reasoning model)
     ],
     envKey: "DEEPSEEK_API_KEY",
     baseURL: "https://api.deepseek.com/v1",
@@ -244,8 +247,8 @@ export class ClaudeProvider implements AIProvider {
           ...(systemInstruction ? { system: systemInstruction } : {}),
           messages: [{ role: "user", content: prompt }],
         });
-        const block = message.content[0];
-        if (block.type === "text") return block.text;
+        const textBlock = message.content.find((b) => b.type === "text");
+        if (textBlock) return textBlock.text;
         throw new Error("Unexpected response type from Claude API");
       },
       { label: `${this.providerName}/${this.modelName}` }
@@ -307,58 +310,40 @@ export class OpenAICompatibleProvider implements AIProvider {
 // ─── MiMo Provider ─────────────────────────────────────────────────────────────
 // MiMo uses the Anthropic messages format but with a different base URL
 // and a custom "api-key" auth header (not "x-api-key" / "Authorization: Bearer").
-// The Anthropic SDK does not support custom auth headers, so we call the API
-// directly via axios.
+// MiMo's token-plan API is Anthropic-compatible — we reuse the Anthropic SDK
+// directly, reading base URL from env (MIMO_BASE_URL / ANTHROPIC_BASE_URL).
 
 export class MiMoProvider implements AIProvider {
+  private client: Anthropic;
   readonly providerName = "mimo";
   readonly modelName: string;
-  private apiKey: string;
-  private readonly baseUrl = "https://api.xiaomimimo.com/anthropic/v1/messages";
 
   constructor(apiKey: string, modelName = PROVIDER_CATALOG.mimo.models[0]) {
-    this.apiKey = apiKey;
+    const baseURL = process.env["MIMO_BASE_URL"]
+      || process.env["ANTHROPIC_BASE_URL"]
+      || "https://token-plan-cn.xiaomimimo.com/anthropic";
+    this.client = new Anthropic({ apiKey, baseURL });
     this.modelName = modelName;
   }
 
   async generate(prompt: string, systemInstruction?: string): Promise<string> {
     return withReliability(
       async () => {
-        const body: Record<string, unknown> = {
+        // Use streaming to avoid timeout errors with large max_tokens
+        const stream = this.client.messages.stream({
           model: this.modelName,
-          max_tokens: 16384,
-          messages: [{ role: "user", content: [{ type: "text", text: prompt }] }],
-          top_p: 0.95,
-          stream: false,
-          temperature: 1.0,
-          stop_sequences: null,
-        };
-
-        if (systemInstruction) {
-          body.system = systemInstruction;
-        }
-
-        const response = await axios.post(this.baseUrl, body, {
-          headers: {
-            "api-key": this.apiKey,
-            "Content-Type": "application/json",
-          },
+          max_tokens: 65536,
+          ...(systemInstruction ? { system: systemInstruction } : {}),
+          messages: [{ role: "user", content: prompt }],
         });
-
-        // Response follows Anthropic format: { content: [{ type: "text"|"thinking", ... }] }
-        // MiMo may return a "thinking" block before the actual "text" block — skip it.
-        const data = response.data as { stop_reason?: string; content?: Array<{ type: string; text?: string; thinking?: string }> };
-        const blocks = data?.content ?? [];
-
-        const textBlock = blocks.find((b) => b.type === "text");
-        if (textBlock?.text) return textBlock.text;
-
-        // If stop_reason is max_tokens, the model was cut off mid-generation (thinking block only)
-        if (data?.stop_reason === "max_tokens") {
-          throw new Error(`MiMo response truncated (max_tokens reached). The prompt may be too long. Try a shorter spec or switch to a model with larger context.`);
-        }
-
-        throw new Error(`Unexpected MiMo response: ${JSON.stringify(response.data).slice(0, 200)}`);
+        const message = await stream.finalMessage();
+        // MiMo may return "thinking" blocks before or instead of "text" blocks.
+        // Extract the first text block; fall back to thinking content; last resort: concatenate all.
+        const textBlock = message.content.find((b) => b.type === "text");
+        if (textBlock) return textBlock.text;
+        const thinkBlock = message.content.find((b) => b.type === "thinking");
+        if (thinkBlock) return (thinkBlock as unknown as { thinking: string }).thinking;
+        return message.content.map((b: { type: string; text?: string }) => b.text ?? "").join("");
       },
       { label: `${this.providerName}/${this.modelName}` }
     );

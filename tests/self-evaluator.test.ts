@@ -337,3 +337,100 @@ describe("runSelfEval — harnessScore", () => {
     expect(logger.setHarnessScore).toHaveBeenCalledWith(result.harnessScore);
   });
 });
+
+// ─── runSelfEval — frontend / mobile repoType ─────────────────────────────────
+
+describe("runSelfEval — frontend repoType", () => {
+  const FRONTEND_DSL: SpecDSL = {
+    ...BASE_DSL,
+    endpoints: [
+      { id: "EP-001", method: "GET", path: "/products", description: "List products", auth: false, successStatus: 200, successDescription: "OK" },
+    ],
+    models: [
+      { name: "Product", fields: [{ name: "id", type: "String", required: true }] },
+    ],
+  };
+
+  it("scores 10 for frontend files using page/store patterns", () => {
+    const result = runSelfEval({
+      dsl: FRONTEND_DSL,
+      generatedFiles: [
+        "src/pages/ProductList.tsx",   // endpoint layer (pages)
+        "src/stores/product.ts",       // model layer (stores)
+        "src/stores/productStore.ts",  // matches "Product"
+      ],
+      compilePassed: true,
+      reviewText: "",
+      promptHash: "fe-001",
+      logger: stubLogger,
+      repoType: "frontend",
+    });
+    expect(result.dslCoverageScore).toBe(10);
+  });
+
+  it("scores 10 for Next.js App Router structure", () => {
+    const result = runSelfEval({
+      dsl: FRONTEND_DSL,
+      generatedFiles: [
+        "app/products/page.tsx",     // endpoint layer (app/)
+        "src/types/product.ts",      // model layer (types)
+      ],
+      compilePassed: true,
+      reviewText: "",
+      promptHash: "fe-002",
+      logger: stubLogger,
+      repoType: "frontend",
+    });
+    expect(result.dslCoverageScore).toBeGreaterThanOrEqual(7);
+  });
+
+  it("scores 10 for React Native screens/hooks pattern", () => {
+    const result = runSelfEval({
+      dsl: FRONTEND_DSL,
+      generatedFiles: [
+        "src/screens/ProductScreen.tsx",  // endpoint layer (screens)
+        "src/hooks/useProduct.ts",        // model layer (hooks)
+      ],
+      compilePassed: true,
+      reviewText: "",
+      promptHash: "fe-003",
+      logger: stubLogger,
+      repoType: "mobile",
+    });
+    expect(result.dslCoverageScore).toBeGreaterThanOrEqual(7);
+  });
+
+  it("deducts for missing page layer on frontend repo (not confused with backend)", () => {
+    const result = runSelfEval({
+      dsl: FRONTEND_DSL,
+      generatedFiles: [
+        // only model layer, no pages/views/screens
+        "src/stores/product.ts",
+      ],
+      compilePassed: true,
+      reviewText: "",
+      promptHash: "fe-004",
+      logger: stubLogger,
+      repoType: "frontend",
+    });
+    // endpoint layer missing → -4 deduction
+    expect(result.dslCoverageScore).toBeLessThanOrEqual(6);
+  });
+
+  it("backend files do NOT count as frontend endpoint layer", () => {
+    const result = runSelfEval({
+      dsl: FRONTEND_DSL,
+      generatedFiles: [
+        "src/controller/productController.ts",  // backend pattern — should NOT match frontend
+        "src/stores/product.ts",
+      ],
+      compilePassed: true,
+      reviewText: "",
+      promptHash: "fe-005",
+      logger: stubLogger,
+      repoType: "frontend",
+    });
+    // controller does not match frontend endpoint patterns → endpoint layer missing → -4
+    expect(result.dslCoverageScore).toBeLessThanOrEqual(6);
+  });
+});

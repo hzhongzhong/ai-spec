@@ -10,6 +10,12 @@ export type MultiRepoResult = {
   dsl: SpecDSL | null;
   repoAbsPath: string;
   role: string;
+  /** Files written by codegen during this run. Empty when codegen failed or never ran. */
+  generatedFiles: string[];
+  /** Human-readable reason when status === "failed". */
+  failureReason?: string;
+  /** Per-repo run ID (when RunLogger was created for this repo). */
+  runId?: string;
 };
 
 // ─── Banner ──────────────────────────────────────────────────────────────────

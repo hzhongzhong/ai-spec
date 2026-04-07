@@ -4,6 +4,7 @@ import * as path from "path";
 import { AIProvider } from "./spec-generator";
 import { ContextLoader, ProjectContext } from "./context-loader";
 import { constitutionSystemPrompt } from "../prompts/constitution.prompt";
+import { DEFAULT_MAX_CONSTITUTION_CHARS } from "./config-defaults";
 
 export const CONSTITUTION_FILE = ".ai-spec-constitution.md";
 
@@ -41,7 +42,7 @@ function buildConstitutionPrompt(context: ProjectContext, projectRoot: string): 
   }
 
   if (context.schema) {
-    parts.push(`=== Prisma Schema ===\n${context.schema.slice(0, 4000)}\n`);
+    parts.push(`=== Prisma Schema ===\n${context.schema.slice(0, DEFAULT_MAX_CONSTITUTION_CHARS)}\n`);
   }
 
   if (context.errorPatterns) {

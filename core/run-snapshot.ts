@@ -1,7 +1,6 @@
 import * as fs from "fs-extra";
 import * as path from "path";
-
-const BACKUP_DIR = ".ai-spec-backup";
+import { DEFAULT_BACKUP_DIR } from "./config-defaults";
 
 // ─── RunSnapshot ──────────────────────────────────────────────────────────────
 /**
@@ -18,7 +17,7 @@ export class RunSnapshot {
     private readonly workingDir: string,
     readonly runId: string
   ) {
-    this.backupRoot = path.join(workingDir, BACKUP_DIR, runId);
+    this.backupRoot = path.join(workingDir, DEFAULT_BACKUP_DIR, runId);
   }
 
   /**

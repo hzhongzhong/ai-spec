@@ -10,6 +10,7 @@ import {
   reviewImpactComplexitySystemPrompt,
 } from "../prompts/codegen.prompt";
 import { CONSTITUTION_FILE } from "./constitution-generator";
+import { DEFAULT_REVIEW_HISTORY_FILE, DEFAULT_MAX_REVIEW_FILE_CHARS } from "./config-defaults";
 
 // ─── Constitution Lessons Helper ──────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ interface ReviewHistoryEntry {
   complexityLevel?: "低" | "中" | "高";
 }
 
-const REVIEW_HISTORY_FILE = ".ai-spec-reviews.json";
+const REVIEW_HISTORY_FILE = DEFAULT_REVIEW_HISTORY_FILE;
 
 async function loadReviewHistory(projectRoot: string): Promise<ReviewHistoryEntry[]> {
   const historyPath = path.join(projectRoot, REVIEW_HISTORY_FILE);
@@ -225,16 +226,19 @@ ${codeContext}`;
     console.log(chalk.gray("  Pass 2/3: Implementation review..."));
 
     // ── Pass 2: Implementation + History ─────────────────────────────────────
+    // Token savings: Pass 2/3 receive a spec digest instead of the full spec,
+    // and omit the raw code context (Pass 1 already analyzed it).
+    const specDigest = specContent && specContent.length > 600
+      ? specContent.slice(0, 600) + "\n... [spec truncated — see Pass 0/1 for full text]"
+      : specContent || "(No spec)";
+
     const history = await loadReviewHistory(this.projectRoot);
     const historyContext = buildHistoryContext(history);
 
     const implPrompt = `Review the implementation details of this change.
 
-=== Feature Spec ===
-${specContent || "(No spec — review for general code quality)"}
-
-=== Code ===
-${codeContext}
+=== Feature Spec (digest — full spec was provided in Pass 0/1) ===
+${specDigest}
 
 === Architecture Review (Pass 1 — do NOT repeat these findings) ===
 ${archReview}
@@ -246,11 +250,8 @@ ${historyContext}`;
     // ── Pass 3: Impact & Complexity ───────────────────────────────────────────
     const impactPrompt = `Assess the impact and complexity of this change.
 
-=== Feature Spec ===
-${specContent || "(No spec — review for general code quality)"}
-
-=== Code ===
-${codeContext}
+=== Feature Spec (digest) ===
+${specDigest}
 
 === Architecture Review (Pass 1 — do NOT repeat) ===
 ${archReview}
@@ -338,8 +339,8 @@ ${implReview}`;
       const fullPath = path.join(workingDir, filePath);
       try {
         const content = await fs.readFile(fullPath, "utf-8");
-        filesSection += `\n\n=== ${filePath} ===\n${content.slice(0, 3000)}`;
-        if (content.length > 3000) filesSection += `\n... (truncated, ${content.length} chars total)`;
+        filesSection += `\n\n=== ${filePath} ===\n${content.slice(0, DEFAULT_MAX_REVIEW_FILE_CHARS)}`;
+        if (content.length > DEFAULT_MAX_REVIEW_FILE_CHARS) filesSection += `\n... (truncated, ${content.length} chars total)`;
       } catch {
         filesSection += `\n\n=== ${filePath} ===\n(file not found)`;
       }
