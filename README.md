@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://github.com/hzhongzhong/ai-spec"><img src="https://img.shields.io/badge/GitHub-ai--spec-181717?logo=github" alt="GitHub" /></a>
   <a href="https://www.npmjs.com/package/ai-spec-dev"><img src="https://img.shields.io/npm/v/ai-spec-dev?color=cb3837&logo=npm" alt="npm" /></a>
-  <img src="https://img.shields.io/badge/version-0.55.0-blue" alt="version" />
+  <img src="https://img.shields.io/badge/version-0.57.0-blue" alt="version" />
   <img src="https://img.shields.io/badge/tests-913%20passed-brightgreen" alt="tests" />
   <img src="https://img.shields.io/badge/providers-9-orange" alt="providers" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="license" />
@@ -20,6 +20,10 @@
 
 <p align="center">
   <a href="#english">English</a> | <a href="#中文文档">中文</a>
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/hzhongzhong/ai-spec/main/docs-assets/demo.gif" alt="ai-spec demo" width="860" />
 </p>
 
 ---
