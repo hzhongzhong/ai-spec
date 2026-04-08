@@ -159,7 +159,7 @@ export async function runSingleRepoPipeline(
   runLogger.setPromptHash(promptHash);
 
   // ── Step 1: Context ─────────────────────────────────────────────────────
-  console.log(chalk.blue("[1/10] Loading project context..."));
+  console.log(chalk.bold("[1/10] Loading project context..."));
   runLogger.stageStart("context_load");
   const loader = new ContextLoader(currentDir);
   const context = await loader.loadProjectContext();
@@ -211,7 +211,7 @@ export async function runSingleRepoPipeline(
   }
 
   // ── Step 2: Spec + Tasks Generation (single AI call) ───────────────────
-  console.log(chalk.blue(`\n[2/10] Generating spec with ${specProviderName}/${specModelName}...`));
+  console.log(chalk.bold(`\n[2/10] Generating spec with ${specProviderName}/${specModelName}...`));
   let specProvider: AIProvider = vcrReplayProvider ?? createProvider(specProviderName, specApiKey, specModelName);
   if (!vcrReplayProvider && opts.vcrRecord) {
     specVcrRecorder = new VcrRecordingProvider(specProvider);
@@ -254,7 +254,7 @@ export async function runSingleRepoPipeline(
     console.log(chalk.gray("\n[3/10] Skipping refinement (--fast)."));
     finalSpec = initialSpec;
   } else {
-    console.log(chalk.blue("\n[3/10] Interactive spec refinement..."));
+    console.log(chalk.bold("\n[3/10] Interactive spec refinement..."));
     runLogger.stageStart("spec_refine");
     const refiner = new SpecRefiner(specProvider);
     finalSpec = await refiner.refineLoop(initialSpec);
@@ -269,7 +269,7 @@ export async function runSingleRepoPipeline(
 
   if (shouldRunAssessment) {
     if (!opts.auto) {
-      console.log(chalk.blue("\n[3.4/10] Spec quality assessment..."));
+      console.log(chalk.bold("\n[3.4/10] Spec quality assessment..."));
     }
     runLogger.stageStart("spec_assess");
     const assessSpinner = startStage("spec_assess", "Evaluating spec quality...");
@@ -304,7 +304,7 @@ export async function runSingleRepoPipeline(
 
   // ── Step 3.5: Approval Gate ─────────────────────────────────────────────
   if (!opts.auto) {
-    console.log(chalk.blue("\n[Gate] Approval Gate — review before code generation"));
+    console.log(chalk.bold("\n[Gate] Approval Gate — review before code generation"));
 
     const specLines = finalSpec.split("\n").length;
     const specWords = finalSpec.split(/\s+/).length;
@@ -375,7 +375,7 @@ export async function runSingleRepoPipeline(
   if (opts.skipDsl) {
     console.log(chalk.gray("\n[DSL] Skipped (--skip-dsl)."));
   } else {
-    console.log(chalk.blue("\n[DSL] Extracting structured DSL from spec..."));
+    console.log(chalk.bold("\n[DSL] Extracting structured DSL from spec..."));
     console.log(chalk.gray(`  Provider: ${specProviderName}/${specModelName}`));
     runLogger.stageStart("dsl_extract");
     const dslSpinner = startStage("dsl_extract", "Extracting DSL from spec...");
@@ -480,7 +480,7 @@ export async function runSingleRepoPipeline(
 
   let workingDir = currentDir;
   if (!skipWorktree) {
-    console.log(chalk.blue("\n[Git] Setting up git worktree..."));
+    console.log(chalk.bold("\n[Git] Setting up git worktree..."));
     const worktreeManager = new GitWorktreeManager(currentDir);
     const worktreePath = await worktreeManager.createWorktree(idea);
     if (worktreePath) workingDir = worktreePath;
@@ -550,7 +550,7 @@ export async function runSingleRepoPipeline(
   }
 
   // ── Step 6: Code Generation ─────────────────────────────────────────────
-  console.log(chalk.blue(`\n[6/10] Code generation (mode: ${codegenMode})...`));
+  console.log(chalk.bold(`\n[6/10] Code generation (mode: ${codegenMode})...`));
   const rawCodegenProvider: AIProvider =
     codegenProviderName === specProviderName && codegenApiKey === specApiKey
       ? specProvider
@@ -652,7 +652,7 @@ export async function runSingleRepoPipeline(
   } else if (!extractedDsl) {
     console.log(chalk.gray("\n[7/10] Skipping test generation (no DSL available)."));
   } else {
-    console.log(chalk.blue(`\n[7/10] Test skeleton generation...`));
+    console.log(chalk.bold(`\n[7/10] Test skeleton generation...`));
     runLogger.stageStart("test_gen");
     const testGen = new TestGenerator(codegenProvider);
     generatedTestFiles = await testGen.generate(extractedDsl, workingDir);
@@ -682,7 +682,7 @@ export async function runSingleRepoPipeline(
   let reviewResult = "";
   let accumulatePromise: Promise<void> | undefined;
   if (!opts.skipReview) {
-    console.log(chalk.blue("\n[9/10] Automated code review (3-pass: architecture + implementation + impact/complexity)..."));
+    console.log(chalk.bold("\n[9/10] Automated code review (3-pass: architecture + implementation + impact/complexity)..."));
     runLogger.stageStart("review");
     const reviewSpinner = startStage("review", "Running 3-pass code review...");
     const reviewer = new CodeReviewer(specProvider, workingDir);
@@ -789,7 +789,7 @@ export async function runSingleRepoPipeline(
   }
 
   // ── Step 10: Harness Self-Evaluation ────────────────────────────────────
-  console.log(chalk.blue("\n[10/10] Harness Self-Evaluation..."));
+  console.log(chalk.bold("\n[10/10] Harness Self-Evaluation..."));
   runLogger.stageStart("self_eval");
   const selfEvalResult = runSelfEval({
     dsl: extractedDsl,
