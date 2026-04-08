@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ai-spec — AI-Driven Development Orchestrator</title>
+  <meta name="description" content="From a single sentence to production-ready code. The complete AI-driven development pipeline with spec, DSL, codegen, review, and self-eval." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080c14;
+      --bg2:       #0d1220;
+      --bg3:       #111827;
+      --border:    rgba(255,255,255,0.07);
+      --border2:   rgba(255,255,255,0.12);
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --cyan:      #22d3ee;
+      --blue:      #3b82f6;
+      --violet:    #8b5cf6;
+      --green:     #22c55e;
+      --yellow:    #facc15;
+      --red:       #f87171;
+      --grad1: linear-gradient(135deg, #22d3ee, #3b82f6, #8b5cf6);
+      --grad2: linear-gradient(135deg, #22c55e, #22d3ee);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 60px;
+      background: rgba(8,12,20,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em;
+      background: var(--grad1); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.875rem; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--grad1); color: #fff; border: none; border-radius: 6px;
+      padding: 0.45rem 1.1rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      text-decoration: none; transition: opacity 0.2s;
+    }
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 6rem 2rem 4rem;
+      position: relative; overflow: hidden;
+    }
+    .hero-glow {
+      position: absolute; top: -20%; left: 50%; transform: translateX(-50%);
+      width: 900px; height: 600px; border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(34,211,238,0.08) 0%, rgba(59,130,246,0.05) 40%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-glow2 {
+      position: absolute; bottom: -10%; left: 20%;
+      width: 500px; height: 400px; border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(139,92,246,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.2);
+      border-radius: 999px; padding: 0.3rem 0.9rem;
+      font-size: 0.78rem; font-weight: 500; color: var(--cyan);
+      margin-bottom: 1.5rem; letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .badge-dot { width: 6px; height: 6px; background: var(--cyan); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+    h1 {
+      font-size: clamp(2.8rem, 6vw, 5rem); font-weight: 900; letter-spacing: -0.03em;
+      line-height: 1.1; margin-bottom: 1.5rem;
+    }
+    .grad-text { background: var(--grad1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.25rem); color: var(--muted); max-width: 600px;
+      margin: 0 auto 2.5rem; font-weight: 400;
+    }
+    .hero-buttons { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-bottom: 3rem; }
+    .btn-primary {
+      background: var(--grad1); color: #fff; border: none; border-radius: 8px;
+      padding: 0.8rem 2rem; font-size: 1rem; font-weight: 600; cursor: pointer;
+      text-decoration: none; transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 30px rgba(34,211,238,0.2);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(34,211,238,0.35); }
+    .btn-secondary {
+      background: transparent; color: var(--text); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 0.8rem 2rem; font-size: 1rem; font-weight: 500;
+      cursor: pointer; text-decoration: none; transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); }
+
+    .hero-stats {
+      display: flex; gap: 3rem; justify-content: center; flex-wrap: wrap;
+      padding: 2rem 0; border-top: 1px solid var(--border);
+      max-width: 700px; margin: 0 auto;
+    }
+    .stat { text-align: center; }
+    .stat-num { font-size: 1.75rem; font-weight: 800; background: var(--grad1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
+    .hero-demo {
+      margin-top: 4rem; width: 100%; max-width: 860px;
+      border-radius: 12px; overflow: hidden;
+      border: 1px solid var(--border2);
+      box-shadow: 0 0 80px rgba(34,211,238,0.1), 0 40px 80px rgba(0,0,0,0.5);
+    }
+    .hero-demo img { width: 100%; display: block; }
+
+    /* ── Section ── */
+    section { padding: 5rem 2rem; max-width: 1200px; margin: 0 auto; }
+    .section-tag {
+      font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--cyan); margin-bottom: 1rem;
+    }
+    h2 { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 1rem; }
+    .section-sub { color: var(--muted); font-size: 1.05rem; max-width: 560px; margin-bottom: 3rem; }
+
+    /* ── Problem ── */
+    .problems-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1px;
+      background: var(--border); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+    }
+    .problem-card {
+      background: var(--bg2); padding: 1.75rem;
+      transition: background 0.2s;
+    }
+    .problem-card:hover { background: var(--bg3); }
+    .problem-icon { font-size: 1.5rem; margin-bottom: 0.75rem; }
+    .problem-title { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+    .problem-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── Pipeline ── */
+    .pipeline-section { background: linear-gradient(180deg, transparent, rgba(34,211,238,0.03), transparent); }
+    .pipeline-flow {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;
+      justify-content: center; margin-bottom: 3rem;
+    }
+    .pipe-step {
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 0.6rem 1rem;
+      font-size: 0.82rem; font-weight: 500; color: var(--text);
+      white-space: nowrap; transition: border-color 0.2s, transform 0.2s;
+    }
+    .pipe-step:hover { border-color: var(--cyan); transform: translateY(-2px); }
+    .pipe-step.highlight { border-color: rgba(34,211,238,0.4); color: var(--cyan); }
+    .pipe-arrow { color: var(--muted); font-size: 0.9rem; }
+
+    .pipeline-cards {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;
+    }
+    .pipe-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.75rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .pipe-card:hover { border-color: var(--border2); transform: translateY(-3px); }
+    .pipe-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem; color: var(--cyan); font-weight: 600;
+      margin-bottom: 0.75rem; letter-spacing: 0.05em;
+    }
+    .pipe-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .pipe-card p { font-size: 0.85rem; color: var(--muted); }
+
+    /* ── Features ── */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 2rem;
+      transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(34,211,238,0.3), transparent);
+      opacity: 0; transition: opacity 0.25s;
+    }
+    .feature-card:hover { border-color: rgba(34,211,238,0.2); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 1.25rem;
+    }
+    .feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.6rem; }
+    .feature-card p { font-size: 0.875rem; color: var(--muted); line-height: 1.65; }
+    .feature-tag {
+      display: inline-block; margin-top: 1rem;
+      font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0.6rem;
+      border-radius: 4px; letter-spacing: 0.04em;
+    }
+
+    /* ── Multi-repo ── */
+    .multirepo-section {
+      background: linear-gradient(135deg, rgba(139,92,246,0.05), rgba(34,211,238,0.05));
+      border: 1px solid var(--border); border-radius: 24px; padding: 4rem;
+      max-width: 1200px; margin: 0 auto;
+    }
+    .multirepo-diagram {
+      display: grid; grid-template-columns: 1fr auto 1fr; gap: 2rem; align-items: center;
+      margin-top: 3rem;
+    }
+    .repo-box {
+      background: var(--bg); border: 1px solid var(--border2); border-radius: 12px; padding: 1.5rem;
+    }
+    .repo-title { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem; }
+    .repo-step { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+    .repo-step:last-child { border-bottom: none; }
+    .repo-step-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .repo-step-text { font-size: 0.8rem; color: var(--muted); }
+    .contract-box {
+      text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    }
+    .contract-badge {
+      background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 8px; padding: 0.75rem 1.25rem;
+      font-size: 0.8rem; font-weight: 600; color: #c4b5fd;
+      white-space: nowrap;
+    }
+    .contract-arrow { font-size: 1.5rem; color: var(--muted); }
+
+    /* ── DSL Artifacts ── */
+    .artifacts-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem;
+    }
+    .artifact-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .artifact-card:hover { transform: translateY(-3px); border-color: var(--border2); }
+    .artifact-cmd {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 600;
+      color: var(--green); background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.15);
+      border-radius: 6px; padding: 0.4rem 0.8rem; display: inline-block; margin-bottom: 1rem;
+    }
+    .artifact-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .artifact-card p { font-size: 0.84rem; color: var(--muted); }
+    .artifact-outputs { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .artifact-output { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 0.5rem; }
+    .artifact-output::before { content: '→'; color: var(--cyan); font-size: 0.75rem; }
+
+    /* ── Providers Marquee ── */
+    .marquee-wrapper {
+      position: relative; overflow: hidden;
+      mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+      -webkit-mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+    }
+    .marquee-track {
+      display: flex; gap: 1rem; width: max-content;
+      animation: marquee 28s linear infinite;
+    }
+    .marquee-track:hover { animation-play-state: paused; }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    .provider-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem;
+      min-width: 200px; flex-shrink: 0;
+      transition: border-color 0.2s, transform 0.2s;
+      cursor: default;
+    }
+    .provider-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+    .provider-logo {
+      width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .provider-logo svg { width: 40px; height: 40px; }
+    .provider-info { display: flex; flex-direction: column; }
+    .provider-name { font-size: 0.9rem; font-weight: 600; }
+    .provider-model { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--muted); margin-top: 0.15rem; white-space: nowrap; }
+
+    /* ── Code block ── */
+    .code-section {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;
+    }
+    .code-block {
+      background: #0a0f1a; border: 1px solid var(--border2);
+      border-radius: 12px; overflow: hidden;
+    }
+    .code-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+    .code-dots { display: flex; gap: 0.4rem; }
+    .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .code-filename { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--muted); }
+    pre {
+      padding: 1.5rem; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem; line-height: 1.7; overflow-x: auto;
+    }
+    .c-green { color: #22c55e; }
+    .c-cyan { color: #22d3ee; }
+    .c-blue { color: #60a5fa; }
+    .c-yellow { color: #facc15; }
+    .c-muted { color: #64748b; }
+    .c-violet { color: #a78bfa; }
+    .c-red { color: #f87171; }
+    .c-white { color: #e2e8f0; }
+
+    /* ── Observability ── */
+    .obs-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;
+    }
+    .obs-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem;
+    }
+    .obs-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .obs-card p { font-size: 0.84rem; color: var(--muted); margin-bottom: 1rem; }
+    .score-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+    .score-label { font-size: 0.78rem; color: var(--muted); width: 80px; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; background: var(--grad2); }
+    .score-val { font-size: 0.78rem; font-weight: 600; width: 30px; text-align: right; color: var(--cyan); }
+
+    /* ── Install ── */
+    .install-section {
+      text-align: center; padding: 5rem 2rem;
+      background: linear-gradient(180deg, transparent, rgba(34,211,238,0.03), transparent);
+    }
+    .install-box {
+      max-width: 700px; margin: 0 auto;
+    }
+    .install-code {
+      background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px;
+      padding: 1.5rem 2rem; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem; text-align: left; margin: 2rem 0;
+    }
+    .install-line { display: flex; align-items: center; gap: 0.75rem; padding: 0.3rem 0; }
+    .prompt { color: var(--cyan); user-select: none; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border); padding: 3rem 2rem;
+      max-width: 1200px; margin: 0 auto;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: gap 1.5rem;
+    }
+    .footer-logo { font-size: 1rem; font-weight: 700; background: var(--grad1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .footer-links { display: flex; gap: 2rem; }
+    .footer-links a { color: var(--muted); text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--text); }
+    .footer-copy { color: var(--muted); font-size: 0.8rem; }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); }
+    .full-divider { width: 100%; border: none; border-top: 1px solid var(--border); }
+
+    /* ── Animations ── */
+    .fade-in { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      nav { padding: 0 1rem; }
+      .nav-links { display: none; }
+      section { padding: 3.5rem 1.25rem; }
+      .multirepo-section { padding: 2.5rem 1.5rem; }
+      .multirepo-diagram { grid-template-columns: 1fr; }
+      .code-section { grid-template-columns: 1fr; }
+      .hero-stats { gap: 2rem; }
+      footer { flex-direction: column; gap: 1.5rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ─────────────────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-logo">ai-spec</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#multirepo">Multi-Repo</a>
+    <a href="#providers">Providers</a>
+    <a href="#install">Install</a>
+    <a href="https://github.com/hzhongzhong/ai-spec" target="_blank">GitHub</a>
+    <a href="https://www.npmjs.com/package/ai-spec-dev" target="_blank" class="nav-cta">npm install</a>
+  </div>
+</nav>
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+
+  <div class="badge"><span class="badge-dot"></span> v0.60.0 · Now Available</div>
+
+  <h1>
+    One sentence.<br/>
+    <span class="grad-text">Production-ready code.</span>
+  </h1>
+
+  <p class="hero-sub">
+    ai-spec is an AI-driven development orchestrator — from a single requirement to
+    fully reviewed, test-covered, spec-aligned code, in minutes.
+  </p>
+
+  <div class="hero-buttons">
+    <a href="#install" class="btn-primary">Get Started →</a>
+    <a href="https://github.com/hzhongzhong/ai-spec" target="_blank" class="btn-secondary">View on GitHub</a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">9</div><div class="stat-label">AI Providers</div></div>
+    <div class="stat"><div class="stat-num">10</div><div class="stat-label">Pipeline Steps</div></div>
+    <div class="stat"><div class="stat-num">913+</div><div class="stat-label">Tests Passing</div></div>
+    <div class="stat"><div class="stat-num">25+</div><div class="stat-label">Core Modules</div></div>
+  </div>
+
+  <div class="hero-demo fade-in">
+    <img src="https://raw.githubusercontent.com/hzhongzhong/ai-spec/main/docs-assets/demo.gif" alt="ai-spec pipeline demo" />
+  </div>
+</section>
+
+<hr class="full-divider" />
+
+<!-- ── Problem ───────────────────────────────────────────────────────────────── -->
+<section id="problem" class="fade-in">
+  <div class="section-tag">The Problem</div>
+  <h2>Why existing AI tools<br/><span class="grad-text">aren't enough</span></h2>
+  <p class="section-sub">Every AI coding tool faces the same structural limitations. ai-spec is designed to address all of them.</p>
+
+  <div class="problems-grid">
+    <div class="problem-card">
+      <div class="problem-icon">🧠</div>
+      <div class="problem-title">No Project Memory</div>
+      <div class="problem-desc">AI doesn't know your error codes, middleware setup, or i18n constraints. Every conversation starts from zero — like code from a new hire who's never seen your codebase.</div>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">🕳️</div>
+      <div class="problem-title">No Structured Middle Layer</div>
+      <div class="problem-desc">Natural language jumps directly to code. No reviewable, versionable contract in between. Misunderstandings are discovered in code — at high cost.</div>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">💥</div>
+      <div class="problem-title">All-or-nothing Generation</div>
+      <div class="problem-desc">Generate a whole feature at once. One error fails everything. No checkpointing, no resume — failures restart from scratch.</div>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">🚪</div>
+      <div class="problem-title">Generate and Exit</div>
+      <div class="problem-desc">Did tests pass? Any lint errors? Architecture violations? You have to check everything manually after the tool exits.</div>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">📉</div>
+      <div class="problem-title">Experience Lost Every Time</div>
+      <div class="problem-desc">A security bug found in review? AI will repeat it next time. Team engineering knowledge can't systematically constrain AI behavior.</div>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">👻</div>
+      <div class="problem-title">Cross-task Hallucinations</div>
+      <div class="problem-desc">Task B hallucinates function names from Task A — even though both files are in the same PR. Without a shared cache, AI guesses instead of reads.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider" />
+
+<!-- ── Pipeline ──────────────────────────────────────────────────────────────── -->
+<section id="pipeline" class="fade-in">
+  <div class="section-tag">The Pipeline</div>
+  <h2>Every step, <span class="grad-text">orchestrated</span></h2>
+  <p class="section-sub">A fully automated 10-step pipeline from idea to reviewed, scored, production-ready code.</p>
+
+  <div class="pipeline-flow">
+    <span class="pipe-step highlight">[1/10] Context</span>
+    <span class="pipe-arrow">→</span>
+    <span class="pipe-step highlight">[2/10] Spec + Tasks</span>
+    <span class="pipe-arrow">→</span>
+    <span class="pipe-step highlight">[3/10] Refinement</span>
+    <span class="pipe-arrow">→</span>
+    <span class="pipe-step">[3.4/10] Quality Gate</span>
+    <span class="pipe-arrow">→</span>
+    <span class="pipe-step">[Gate] Approval</span>
+    <span class="pipe-arrow">→</span>
+    <span class="pipe-step highlight">[DSL] Contract</span>
+    <span class="pipe-arrow">→</span>
+    <span class="pipe-step">[Git] Worktree</span>
+    <span class="pipe-arrow">→</span>
+    <span class="pipe-step highlight">[6/10] Codegen</span>
+    <span class="pipe-arrow">→</span>
+    <span class="pipe-step">[7/10] Tests</span>
+    <span class="pipe-arrow">→</span>
+    <span class="pipe-step">[8/10] Auto-fix</span>
+    <span class="pipe-arrow">→</span>
+    <span class="pipe-step highlight">[9/10] 3-pass Review</span>
+    <span class="pipe-arrow">→</span>
+    <span class="pipe-step highlight">[10/10] Harness Eval</span>
+  </div>
+
+  <div class="pipeline-cards">
+    <div class="pipe-card">
+      <div class="pipe-num">[1/10] CONTEXT LOAD</div>
+      <h3>Project-Aware from the Start</h3>
+      <p>Scans routes, schemas, dependencies, middleware, and the project constitution. Every prompt is grounded in your actual codebase — not a generic template.</p>
+    </div>
+    <div class="pipe-card">
+      <div class="pipe-num">[2/10] SPEC + TASKS</div>
+      <h3>Structured Spec with Task Decomposition</h3>
+      <p>Generates a human-readable Markdown spec and decomposes it into ordered tasks: data → service → api → view → route → test. One AI call, complete output.</p>
+    </div>
+    <div class="pipe-card">
+      <div class="pipe-num">[3/10] REFINEMENT</div>
+      <h3>Interactive Polish with Diff Preview</h3>
+      <p>AI polishes the spec and shows a colored diff. You approve, reject, or request changes. Multiple rounds supported — no code is written until you say so.</p>
+    </div>
+    <div class="pipe-card">
+      <div class="pipe-num">[DSL] CONTRACT</div>
+      <h3>Machine-Readable Dual Contract</h3>
+      <p>Extracts a SpecDSL JSON — models, endpoints, behaviors — from the spec. Validated against 9 schema rules. The single source of truth for codegen, tests, and exports.</p>
+    </div>
+    <div class="pipe-card">
+      <div class="pipe-num">[6/10] CODEGEN</div>
+      <h3>Task-Layered Generation with File Cache</h3>
+      <p>Generates file-by-file in dependency order. Each completed file's exports are cached and injected into subsequent prompts — eliminating cross-task hallucinations.</p>
+    </div>
+    <div class="pipe-card">
+      <div class="pipe-num">[8/10] AUTO-FIX</div>
+      <h3>Error Feedback Loop — Up to 3 Cycles</h3>
+      <p>Runs npm test / lint / tsc, parses errors by file, and sends targeted AI fixes with DSL context. Dependency-sorted repair order maximizes cycle efficiency.</p>
+    </div>
+    <div class="pipe-card">
+      <div class="pipe-num">[9/10] 3-PASS REVIEW</div>
+      <h3>Architecture + Implementation + Impact</h3>
+      <p>Pass 1: architecture & spec compliance. Pass 2: implementation correctness & edge cases. Pass 3: blast radius, complexity score, breaking change risk.</p>
+    </div>
+    <div class="pipe-card">
+      <div class="pipe-num">[10/10] HARNESS EVAL</div>
+      <h3>Automated Quality Score</h3>
+      <p>Scores on 4 dimensions: compliance (30%) + DSL coverage (25%) + compile (20%) + review (25%). Linked to prompt hash — tracks quality over time with zero AI calls.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider" />
+
+<!-- ── Features ──────────────────────────────────────────────────────────────── -->
+<section id="features" class="fade-in">
+  <div class="section-tag">Core Features</div>
+  <h2>Everything you need to<br/><span class="grad-text">ship with confidence</span></h2>
+  <p class="section-sub">Every feature addresses a real pain point in AI-assisted development.</p>
+
+  <div class="features-grid">
+
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(34,211,238,0.1)">📜</div>
+      <h3>Project Constitution System</h3>
+      <p>Self-evolving knowledge base (§1–§9) that auto-injects into every prompt. Scans routes, middleware, schema, and conventions on init. Grows smarter with every review via §9 lesson accumulation.</p>
+      <span class="feature-tag" style="background:rgba(34,211,238,0.08);color:var(--cyan)">ai-spec init</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(59,130,246,0.1)">🎯</div>
+      <h3>Dual-Layer Contract</h3>
+      <p>Human-readable Markdown Spec for engineers to review and align on. Machine-readable SpecDSL JSON for tools to consume. Both versioned, both auditable. Codegen, tests, and exports all share one contract.</p>
+      <span class="feature-tag" style="background:rgba(59,130,246,0.08);color:var(--blue)">Spec + DSL</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(34,197,94,0.1)">🔄</div>
+      <h3>Dual Feedback Loops</h3>
+      <p>DSL Gap Loop: detects sparse contracts before codegen and triggers targeted spec enrichment. Review→DSL Loop: structural review issues feed back into the contract — so the next run starts cleaner.</p>
+      <span class="feature-tag" style="background:rgba(34,197,94,0.08);color:var(--green)">Self-correcting</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(250,204,21,0.1)">⚡</div>
+      <h3>VCR Record & Replay</h3>
+      <p>Record real AI responses on first run. Replay them deterministically in subsequent runs — zero API calls, zero cost. Iterate on pipeline logic and UI without burning tokens.</p>
+      <span class="feature-tag" style="background:rgba(250,204,21,0.08);color:var(--yellow)">ai-spec create --vcr-record</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(139,92,246,0.1)">🛡️</div>
+      <h3>Approval Gate</h3>
+      <p>Human review happens at the right moment: after the spec is clear and the DSL is valid, but before any code is written. Abort means zero disk residue. Proceed means every step has a verified contract to follow.</p>
+      <span class="feature-tag" style="background:rgba(139,92,246,0.08);color:var(--violet)">[Gate] checkpoint</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(248,113,113,0.1)">🔁</div>
+      <h3>Fix-History Self-Learning</h3>
+      <p>Every successful import fix is appended to a ledger. On the next codegen run, a "DO NOT REPEAT" section is automatically injected into prompts — preventing the same hallucination from ever reoccurring.</p>
+      <span class="feature-tag" style="background:rgba(248,113,113,0.08);color:var(--red)">v0.54+ zero-cost learning</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(34,211,238,0.1)">↩️</div>
+      <h3>Instant Rollback</h3>
+      <p>Every run gets a unique RunId. Before any file is written, the original content is snapshotted. One command restores your entire repo to pre-run state — precise to the file, precise to the run.</p>
+      <span class="feature-tag" style="background:rgba(34,211,238,0.08);color:var(--cyan)">ai-spec restore &lt;runId&gt;</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(34,197,94,0.1)">🌐</div>
+      <h3>9 AI Providers</h3>
+      <p>Gemini, Claude, OpenAI, DeepSeek, Qwen, GLM, MiniMax, Doubao, MiMo. Mix and match: use one model for spec generation, another for codegen. Per-run provider override supported.</p>
+      <span class="feature-tag" style="background:rgba(34,197,94,0.08);color:var(--green)">--provider --codegen-provider</span>
+    </div>
+
+  </div>
+</section>
+
+<hr class="full-divider" />
+
+<!-- ── Multi-Repo ─────────────────────────────────────────────────────────────── -->
+<section id="multirepo" class="fade-in" style="padding:5rem 2rem">
+  <div class="multirepo-section">
+    <div class="section-tag">Multi-Repo Workspace</div>
+    <h2>Full-stack in<br/><span class="grad-text">one command</span></h2>
+    <p class="section-sub">The only pipeline that wires your backend and frontend together — automatically.</p>
+
+    <div class="multirepo-diagram">
+      <div class="repo-box">
+        <div class="repo-title">🖥️ Backend — node-express</div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">[W2] Spec + DSL generated</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">Models, endpoints, behaviors extracted</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">Code generated + reviewed</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--green)"></span><span class="repo-step-text">DSL contract ready for handoff →</span></div>
+      </div>
+
+      <div class="contract-box">
+        <div class="contract-arrow">⬇</div>
+        <div class="contract-badge">DSL Contract<br/>5 endpoints<br/>3 models</div>
+        <div class="contract-arrow">⬇</div>
+        <div style="font-size:0.72rem;color:var(--muted);text-align:center">injected into<br/>frontend pipeline</div>
+      </div>
+
+      <div class="repo-box">
+        <div class="repo-title">🖼️ Frontend — vue / react</div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">[W4] Spec generated with backend contract</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">HTTP client calls pre-aligned to DSL</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">Code generated + reviewed</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--green)"></span><span class="repo-step-text">[W5] Cross-stack verifier: 0 phantoms ✔</span></div>
+      </div>
+    </div>
+
+    <div style="margin-top:2.5rem;padding:1.5rem;background:rgba(34,211,238,0.04);border:1px solid rgba(34,211,238,0.12);border-radius:10px;">
+      <div style="font-size:0.8rem;font-weight:600;color:var(--cyan);margin-bottom:0.75rem">✔ Cross-Stack Contract Verification (v0.50+)</div>
+      <p style="font-size:0.84rem;color:var(--muted)">After frontend generation, the cross-stack verifier scans every API call in the frontend code and checks it against the backend DSL. Phantom routes (hallucinated endpoints), method mismatches, and string-concatenated paths are all detected and reported before you push.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider" />
+
+<!-- ── DSL Artifacts ──────────────────────────────────────────────────────────── -->
+<section id="artifacts" class="fade-in">
+  <div class="section-tag">DSL-Derived Artifacts</div>
+  <h2>One contract,<br/><span class="grad-text">many outputs</span></h2>
+  <p class="section-sub">The SpecDSL isn't just for codegen — it powers your entire development workflow.</p>
+
+  <div class="artifacts-grid">
+    <div class="artifact-card">
+      <div class="artifact-cmd">ai-spec export</div>
+      <h3>OpenAPI 3.1.0 Export</h3>
+      <p>DSL → production-ready YAML or JSON. Plug directly into Postman, Swagger UI, or any SDK generator.</p>
+      <div class="artifact-outputs">
+        <div class="artifact-output">openapi.yaml (3.1.0)</div>
+        <div class="artifact-output">Paths, schemas, parameters, responses</div>
+        <div class="artifact-output">--format json · --server &lt;url&gt;</div>
+      </div>
+    </div>
+    <div class="artifact-card">
+      <div class="artifact-cmd">ai-spec mock</div>
+      <h3>Instant Mock Server</h3>
+      <p>DSL → Express mock server + MSW handlers + Vite proxy config. Frontend development without waiting for the backend.</p>
+      <div class="artifact-outputs">
+        <div class="artifact-output">mock/server.js (Express)</div>
+        <div class="artifact-output">mock/handlers.ts (MSW)</div>
+        <div class="artifact-output">--serve --proxy --port 3001</div>
+      </div>
+    </div>
+    <div class="artifact-card">
+      <div class="artifact-cmd">ai-spec types</div>
+      <h3>TypeScript Types</h3>
+      <p>DSL → typed interfaces, request/response types, and API endpoint constants. Shared across frontend and backend.</p>
+      <div class="artifact-outputs">
+        <div class="artifact-output">export interface Model {}</div>
+        <div class="artifact-output">export const API_ENDPOINTS</div>
+        <div class="artifact-output">Request & Response types</div>
+      </div>
+    </div>
+    <div class="artifact-card">
+      <div class="artifact-cmd">ai-spec dashboard</div>
+      <h3>Harness Dashboard</h3>
+      <p>Generate a static HTML quality dashboard. Track harness scores, compliance rates, and review trends across all runs.</p>
+      <div class="artifact-outputs">
+        <div class="artifact-output">Static HTML, no server needed</div>
+        <div class="artifact-output">Score trend charts</div>
+        <div class="artifact-output">Per-run stage breakdown</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider" />
+
+<!-- ── Code ──────────────────────────────────────────────────────────────────── -->
+<section id="code" class="fade-in">
+  <div class="code-section">
+    <div>
+      <div class="section-tag">Live Output</div>
+      <h2>What the pipeline<br/><span class="grad-text">actually outputs</span></h2>
+      <p style="color:var(--muted);font-size:0.95rem;line-height:1.7;margin-top:1rem">
+        Every step is visible, every decision is auditable.
+        No black box — you see exactly what's happening,
+        what scored how, and what was fixed automatically.
+      </p>
+      <div style="margin-top:2rem;display:flex;flex-direction:column;gap:0.75rem">
+        <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Spec quality assessment with per-dimension scores</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">DSL extraction with validation summary</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Per-file codegen with layer labels</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Error auto-fix with cycle count</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">3-pass review with per-pass verdicts</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Final harness score breakdown (4 dimensions)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots">
+          <div class="code-dot" style="background:#ff5f57"></div>
+          <div class="code-dot" style="background:#febc2e"></div>
+          <div class="code-dot" style="background:#28c840"></div>
+        </div>
+        <div class="code-filename">ai-spec create "Add task management"</div>
+      </div>
+      <pre><span class="c-white">[1/10]</span>  <span class="c-muted">Loading project context...</span>
+        <span class="c-green">Constitution : ✔ found (§1–§9)</span>
+        <span class="c-muted">Tech stack   : vue · vite · pinia</span>
+
+<span class="c-white">[2/10]</span>  <span class="c-muted">Generating spec with glm/glm-4.5...</span>
+        <span class="c-green">✔ Spec generated</span>  <span class="c-green">✔ 8 tasks</span>
+
+<span class="c-white">[3.4/10]</span> <span class="c-muted">Spec quality assessment...</span>
+        <span class="c-muted">Coverage     [</span><span class="c-green">██████████████████</span><span class="c-muted">░░]  9/10</span>
+        <span class="c-muted">Clarity      [</span><span class="c-green">████████████████</span><span class="c-muted">░░░░]  8/10</span>
+
+<span class="c-white">[Gate]</span>  <span class="c-yellow">Approval Gate</span> <span class="c-muted">— awaiting decision</span>
+        <span class="c-green">✔ Approved — continuing...</span>
+
+<span class="c-white">[DSL]</span>   <span class="c-muted">Extracting structured contract...</span>
+        <span class="c-green">✔ DSL valid</span> <span class="c-muted">— Models: 3  Endpoints: 7</span>
+
+<span class="c-white">[6/10]</span>  <span class="c-muted">Code generation (8 files)...</span>
+        <span class="c-green">✔</span>  <span class="c-cyan">service</span>  <span class="c-muted">· src/api/task.ts</span>
+        <span class="c-green">✔</span>  <span class="c-cyan">api</span>      <span class="c-muted">· src/stores/taskStore.ts</span>
+        <span class="c-green">✔</span>  <span class="c-cyan">view</span>     <span class="c-muted">· src/views/TaskList.vue</span>
+        <span class="c-green">████████████████████</span>  <span class="c-white">100%</span>
+
+<span class="c-white">[8/10]</span>  <span class="c-yellow">⚠ 3 errors</span> <span class="c-muted">— auto-fixing cycle 1...</span>
+        <span class="c-green">✔ All errors resolved in 1 cycle</span>
+
+<span class="c-white">[9/10]</span>  <span class="c-muted">3-pass code review...</span>
+        <span class="c-muted">Pass 1</span>  <span class="c-green">✔ Architecture aligned</span>
+        <span class="c-muted">Pass 2</span>  <span class="c-green">✔ Implementation correct</span>
+        <span class="c-muted">Score   [</span><span class="c-green">████████████████</span><span class="c-muted">░░░░]  8.2/10</span>
+
+<span class="c-white">[10/10]</span> <span class="c-muted">Harness Self-Evaluation...</span>
+        <span class="c-muted">Total   [</span><span class="c-green">██████████████████</span><span class="c-muted">░░]  92/100</span>
+        <span class="c-green">✔ 2 lessons → constitution §9</span>
+        <span class="c-cyan">RunId: 20260409-143022-a7f2</span></pre>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider" />
+
+<!-- ── Observability ──────────────────────────────────────────────────────────── -->
+<section id="observability" class="fade-in">
+  <div class="section-tag">Observability</div>
+  <h2>Quality you can<br/><span class="grad-text">measure and track</span></h2>
+  <p class="section-sub">ai-spec turns code generation quality into data — comparable, trackable, and improvable over time.</p>
+
+  <div class="obs-grid">
+    <div class="obs-card">
+      <h3>Harness Score Trend</h3>
+      <p>Track quality across all runs. See if your pipeline is improving.</p>
+      <div class="score-bar"><span class="score-label">Run 1</span><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div><span class="score-val">70</span></div>
+      <div class="score-bar"><span class="score-label">Run 2</span><div class="bar-track"><div class="bar-fill" style="width:74%"></div></div><span class="score-val">74</span></div>
+      <div class="score-bar"><span class="score-label">Run 3</span><div class="bar-track"><div class="bar-fill" style="width:82%"></div></div><span class="score-val">82</span></div>
+      <div class="score-bar"><span class="score-label">Run 4</span><div class="bar-track"><div class="bar-fill" style="width:88%"></div></div><span class="score-val">88</span></div>
+      <div class="score-bar"><span class="score-label">Run 5</span><div class="bar-track"><div class="bar-fill" style="width:92%"></div></div><span class="score-val">92</span></div>
+    </div>
+
+    <div class="obs-card">
+      <h3>Per-Run Stage Logs</h3>
+      <p>Every stage is timed and logged to <code style="font-family:monospace;font-size:0.8em;color:var(--cyan)">.ai-spec-logs/&lt;runId&gt;.json</code>.</p>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted);margin-top:1rem;line-height:2">
+        <div><span style="color:var(--cyan)">context_load</span>   312ms</div>
+        <div><span style="color:var(--cyan)">spec_gen</span>       18.4s</div>
+        <div><span style="color:var(--cyan)">dsl_extract</span>    6.1s</div>
+        <div><span style="color:var(--cyan)">codegen</span>        51.2s</div>
+        <div><span style="color:var(--cyan)">error_feedback</span> 14.3s</div>
+        <div><span style="color:var(--cyan)">review</span>         14.8s</div>
+        <div><span style="color:var(--green)">total</span>          94.3s</div>
+      </div>
+    </div>
+
+    <div class="obs-card">
+      <h3>4-Dimension Scoring</h3>
+      <p>The harness score is deterministic — no AI calls after generation completes.</p>
+      <div style="margin-top:1rem;display:flex;flex-direction:column;gap:0.75rem">
+        <div style="display:flex;justify-content:space-between;font-size:0.82rem">
+          <span style="color:var(--muted)">Compliance</span><span style="color:var(--cyan);font-weight:600">30%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.82rem">
+          <span style="color:var(--muted)">DSL Coverage</span><span style="color:var(--cyan);font-weight:600">25%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.82rem">
+          <span style="color:var(--muted)">Compile Pass</span><span style="color:var(--cyan);font-weight:600">20%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.82rem">
+          <span style="color:var(--muted)">Review Score</span><span style="color:var(--cyan);font-weight:600">25%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="obs-card">
+      <h3>Instant Rollback</h3>
+      <p>Don't like the result? One command restores all modified files to their pre-run state.</p>
+      <div style="margin-top:1rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:0.78rem">
+        <div style="color:var(--cyan)">$ ai-spec restore 20260409-a7f2</div>
+        <div style="color:var(--muted);margin-top:0.5rem">↩ src/api/task.ts</div>
+        <div style="color:var(--muted)">↩ src/stores/taskStore.ts</div>
+        <div style="color:var(--muted)">↩ src/views/TaskList.vue</div>
+        <div style="color:var(--green);margin-top:0.5rem">✔ 8 files restored</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider" />
+
+<!-- ── Providers ──────────────────────────────────────────────────────────────── -->
+<section id="providers" class="fade-in">
+  <div class="section-tag">AI Providers</div>
+  <h2>9 providers,<br/><span class="grad-text">your choice</span></h2>
+  <p class="section-sub">Use any combination of providers. Mix a reasoning model for spec generation with a fast model for codegen.</p>
+
+  <div class="marquee-wrapper">
+    <div class="marquee-track" id="marquee-track">
+
+      <!-- ── Set A ── -->
+      <div class="provider-card">
+        <div class="provider-logo">
+          <!-- MiMo / Xiaomi -->
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="#FF6900"/>
+            <text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-weight="700" font-size="13">Mi</text>
+          </svg>
+        </div>
+        <div class="provider-info">
+          <div class="provider-name">MiMo</div>
+          <div class="provider-model">mimo-v2-pro</div>
+        </div>
+      </div>
+
+      <div class="provider-card">
+        <div class="provider-logo">
+          <!-- Gemini -->
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="#1a1a2e"/>
+            <path d="M20 6 C20 6 21.5 14 28 20 C21.5 20 21.5 20 21.5 20 C21.5 26 20 34 20 34 C20 34 18.5 26 13 20 C18.5 20 18.5 20 18.5 20 C18.5 14 20 6 20 6Z" fill="url(#gem-g)"/>
+            <defs>
+              <linearGradient id="gem-g" x1="13" y1="6" x2="28" y2="34" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#4285F4"/>
+                <stop offset="50%" stop-color="#8AB4F8"/>
+                <stop offset="100%" stop-color="#4285F4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="provider-info">
+          <div class="provider-name">Gemini</div>
+          <div class="provider-model">gemini-2.5-pro</div>
+        </div>
+      </div>
+
+      <div class="provider-card">
+        <div class="provider-logo">
+          <!-- Claude / Anthropic -->
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="#CC785C"/>
+            <path d="M15.5 28L20 12L24.5 28M13 28H16.5M23.5 28H27" stroke="#F5E6DB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M17.5 23H22.5" stroke="#F5E6DB" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="provider-info">
+          <div class="provider-name">Claude</div>
+          <div class="provider-model">claude-opus-4-6</div>
+        </div>
+      </div>
+
+      <div class="provider-card">
+        <div class="provider-logo">
+          <!-- OpenAI -->
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="#000000"/>
+            <path d="M20 8.5C17.1 8.5 14.5 9.9 12.9 12.1C11.2 11.9 9.5 12.6 8.4 13.9C7.3 15.2 7.0 17.0 7.5 18.6C6.0 19.8 5.2 21.6 5.5 23.4C5.7 25.2 6.9 26.8 8.5 27.5C8.5 30.5 10.9 33 14 33C14.9 33 15.7 32.8 16.5 32.3C17.7 33.4 19.3 33.8 20.9 33.4C22.5 33 23.7 31.9 24.3 30.4C26 30.5 27.6 29.6 28.5 28.1C29.4 26.6 29.4 24.8 28.5 23.3C29.8 22 30.3 20.2 29.8 18.5C29.3 16.8 28 15.5 26.3 15.0C26.1 12.1 23.6 9.8 20.7 9.6L20 8.5Z" fill="white" opacity="0.9"/>
+          </svg>
+        </div>
+        <div class="provider-info">
+          <div class="provider-name">OpenAI</div>
+          <div class="provider-model">o3 · gpt-4o</div>
+        </div>
+      </div>
+
+      <div class="provider-card">
+        <div class="provider-logo">
+          <!-- DeepSeek -->
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="#0B1E4B"/>
+            <path d="M8 22C8 22 10 14 20 14C30 14 32 22 32 22" stroke="#4FACFE" stroke-width="2" stroke-linecap="round"/>
+            <path d="M10 25C10 25 13 19 20 19C27 19 30 25 30 25" stroke="#4FACFE" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="20" cy="28" r="2.5" fill="#4FACFE"/>
+            <circle cx="14" cy="27" r="1.5" fill="#4FACFE" opacity="0.6"/>
+            <circle cx="26" cy="27" r="1.5" fill="#4FACFE" opacity="0.6"/>
+          </svg>
+        </div>
+        <div class="provider-info">
+          <div class="provider-name">DeepSeek</div>
+          <div class="provider-model">deepseek-chat · r1</div>
+        </div>
+      </div>
+
+      <div class="provider-card">
+        <div class="provider-logo">
+          <!-- Qwen / Alibaba -->
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="#6B26C7"/>
+            <circle cx="20" cy="18" r="6" stroke="white" stroke-width="2.2"/>
+            <path d="M24 22L28 28" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M17 27H23" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+          </svg>
+        </div>
+        <div class="provider-info">
+          <div class="provider-name">Qwen</div>
+          <div class="provider-model">qwen3-235b-a22b</div>
+        </div>
+      </div>
+
+      <div class="provider-card">
+        <div class="provider-logo">
+          <!-- GLM / Zhipu -->
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="#1a1a1a"/>
+            <path d="M20 8L26 14H22V22H18V14H14L20 8Z" fill="url(#glm-g)"/>
+            <path d="M20 32L14 26H18V20H22V26H26L20 32Z" fill="url(#glm-g2)" opacity="0.7"/>
+            <defs>
+              <linearGradient id="glm-g" x1="14" y1="8" x2="26" y2="22" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#A78BFA"/>
+                <stop offset="100%" stop-color="#7C3AED"/>
+              </linearGradient>
+              <linearGradient id="glm-g2" x1="14" y1="20" x2="26" y2="32" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#7C3AED"/>
+                <stop offset="100%" stop-color="#A78BFA"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="provider-info">
+          <div class="provider-name">GLM</div>
+          <div class="provider-model">glm-5 · glm-4.5-air</div>
+        </div>
+      </div>
+
+      <div class="provider-card">
+        <div class="provider-logo">
+          <!-- MiniMax -->
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="#0F172A"/>
+            <rect x="9" y="13" width="5" height="14" rx="2.5" fill="url(#mm-g)"/>
+            <rect x="17.5" y="13" width="5" height="14" rx="2.5" fill="url(#mm-g)"/>
+            <rect x="26" y="13" width="5" height="14" rx="2.5" fill="url(#mm-g)"/>
+            <defs>
+              <linearGradient id="mm-g" x1="0" y1="13" x2="0" y2="27" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#38BDF8"/>
+                <stop offset="100%" stop-color="#0EA5E9"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="provider-info">
+          <div class="provider-name">MiniMax</div>
+          <div class="provider-model">MiniMax-Text-2.7</div>
+        </div>
+      </div>
+
+      <div class="provider-card">
+        <div class="provider-logo">
+          <!-- Doubao / ByteDance -->
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="#1677FF"/>
+            <path d="M12 14C12 12.9 12.9 12 14 12H22C23.1 12 24 12.9 24 14V22C24 23.1 23.1 24 22 24H14C12.9 24 12 23.1 12 22V14Z" fill="white"/>
+            <path d="M18 20C18 18.9 18.9 18 20 18H26C27.1 18 28 18.9 28 20V26C28 27.1 27.1 28 26 28H20C18.9 28 18 27.1 18 26V20Z" fill="white" opacity="0.7"/>
+          </svg>
+        </div>
+        <div class="provider-info">
+          <div class="provider-name">Doubao</div>
+          <div class="provider-model">doubao-pro-256k</div>
+        </div>
+      </div>
+
+      <!-- ── Set B (duplicate for seamless loop) ── -->
+      <div class="provider-card">
+        <div class="provider-logo"><svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#FF6900"/><text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-weight="700" font-size="13">Mi</text></svg></div>
+        <div class="provider-info"><div class="provider-name">MiMo</div><div class="provider-model">mimo-v2-pro</div></div>
+      </div>
+      <div class="provider-card">
+        <div class="provider-logo"><svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#1a1a2e"/><path d="M20 6 C20 6 21.5 14 28 20 C21.5 20 21.5 20 21.5 20 C21.5 26 20 34 20 34 C20 34 18.5 26 13 20 C18.5 20 18.5 20 18.5 20 C18.5 14 20 6 20 6Z" fill="url(#gem-g2)"/><defs><linearGradient id="gem-g2" x1="13" y1="6" x2="28" y2="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#4285F4"/><stop offset="50%" stop-color="#8AB4F8"/><stop offset="100%" stop-color="#4285F4"/></linearGradient></defs></svg></div>
+        <div class="provider-info"><div class="provider-name">Gemini</div><div class="provider-model">gemini-2.5-pro</div></div>
+      </div>
+      <div class="provider-card">
+        <div class="provider-logo"><svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#CC785C"/><path d="M15.5 28L20 12L24.5 28M13 28H16.5M23.5 28H27" stroke="#F5E6DB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17.5 23H22.5" stroke="#F5E6DB" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+        <div class="provider-info"><div class="provider-name">Claude</div><div class="provider-model">claude-opus-4-6</div></div>
+      </div>
+      <div class="provider-card">
+        <div class="provider-logo"><svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#000000"/><path d="M20 8.5C17.1 8.5 14.5 9.9 12.9 12.1C11.2 11.9 9.5 12.6 8.4 13.9C7.3 15.2 7.0 17.0 7.5 18.6C6.0 19.8 5.2 21.6 5.5 23.4C5.7 25.2 6.9 26.8 8.5 27.5C8.5 30.5 10.9 33 14 33C14.9 33 15.7 32.8 16.5 32.3C17.7 33.4 19.3 33.8 20.9 33.4C22.5 33 23.7 31.9 24.3 30.4C26 30.5 27.6 29.6 28.5 28.1C29.4 26.6 29.4 24.8 28.5 23.3C29.8 22 30.3 20.2 29.8 18.5C29.3 16.8 28 15.5 26.3 15.0C26.1 12.1 23.6 9.8 20.7 9.6L20 8.5Z" fill="white" opacity="0.9"/></svg></div>
+        <div class="provider-info"><div class="provider-name">OpenAI</div><div class="provider-model">o3 · gpt-4o</div></div>
+      </div>
+      <div class="provider-card">
+        <div class="provider-logo"><svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#0B1E4B"/><path d="M8 22C8 22 10 14 20 14C30 14 32 22 32 22" stroke="#4FACFE" stroke-width="2" stroke-linecap="round"/><path d="M10 25C10 25 13 19 20 19C27 19 30 25 30 25" stroke="#4FACFE" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="28" r="2.5" fill="#4FACFE"/><circle cx="14" cy="27" r="1.5" fill="#4FACFE" opacity="0.6"/><circle cx="26" cy="27" r="1.5" fill="#4FACFE" opacity="0.6"/></svg></div>
+        <div class="provider-info"><div class="provider-name">DeepSeek</div><div class="provider-model">deepseek-chat · r1</div></div>
+      </div>
+      <div class="provider-card">
+        <div class="provider-logo"><svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#6B26C7"/><circle cx="20" cy="18" r="6" stroke="white" stroke-width="2.2"/><path d="M24 22L28 28" stroke="white" stroke-width="2.2" stroke-linecap="round"/><path d="M17 27H23" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.6"/></svg></div>
+        <div class="provider-info"><div class="provider-name">Qwen</div><div class="provider-model">qwen3-235b-a22b</div></div>
+      </div>
+      <div class="provider-card">
+        <div class="provider-logo"><svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#1a1a1a"/><path d="M20 8L26 14H22V22H18V14H14L20 8Z" fill="url(#glm-g3)"/><path d="M20 32L14 26H18V20H22V26H26L20 32Z" fill="url(#glm-g4)" opacity="0.7"/><defs><linearGradient id="glm-g3" x1="14" y1="8" x2="26" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#A78BFA"/><stop offset="100%" stop-color="#7C3AED"/></linearGradient><linearGradient id="glm-g4" x1="14" y1="20" x2="26" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED"/><stop offset="100%" stop-color="#A78BFA"/></linearGradient></defs></svg></div>
+        <div class="provider-info"><div class="provider-name">GLM</div><div class="provider-model">glm-5 · glm-4.5-air</div></div>
+      </div>
+      <div class="provider-card">
+        <div class="provider-logo"><svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#0F172A"/><rect x="9" y="13" width="5" height="14" rx="2.5" fill="url(#mm-g2)"/><rect x="17.5" y="13" width="5" height="14" rx="2.5" fill="url(#mm-g2)"/><rect x="26" y="13" width="5" height="14" rx="2.5" fill="url(#mm-g2)"/><defs><linearGradient id="mm-g2" x1="0" y1="13" x2="0" y2="27" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#38BDF8"/><stop offset="100%" stop-color="#0EA5E9"/></linearGradient></defs></svg></div>
+        <div class="provider-info"><div class="provider-name">MiniMax</div><div class="provider-model">MiniMax-Text-2.7</div></div>
+      </div>
+      <div class="provider-card">
+        <div class="provider-logo"><svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#1677FF"/><path d="M12 14C12 12.9 12.9 12 14 12H22C23.1 12 24 12.9 24 14V22C24 23.1 23.1 24 22 24H14C12.9 24 12 23.1 12 22V14Z" fill="white"/><path d="M18 20C18 18.9 18.9 18 20 18H26C27.1 18 28 18.9 28 20V26C28 27.1 27.1 28 26 28H20C18.9 28 18 27.1 18 26V20Z" fill="white" opacity="0.7"/></svg></div>
+        <div class="provider-info"><div class="provider-name">Doubao</div><div class="provider-model">doubao-pro-256k</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="margin-top:2rem;padding:1.25rem 1.5rem;background:var(--bg2);border:1px solid var(--border);border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:0.82rem;color:var(--muted)">
+    <span style="color:var(--green)">$</span> ai-spec create "Add login" <span style="color:var(--cyan)">--provider gemini --codegen-provider deepseek</span>
+  </div>
+</section>
+
+<hr class="full-divider" />
+
+<!-- ── Install ────────────────────────────────────────────────────────────────── -->
+<section id="install" class="fade-in" style="max-width:1200px;margin:0 auto">
+  <div class="install-section">
+    <div class="install-box">
+      <div class="section-tag" style="justify-content:center;display:flex">Quick Start</div>
+      <h2>Ready in <span class="grad-text">60 seconds</span></h2>
+      <p style="color:var(--muted);margin-top:0.75rem">Install globally, set your API key, register a repo, and start shipping.</p>
+
+      <div class="install-code">
+        <div class="install-line">
+          <span class="prompt">#</span>
+          <span style="color:var(--muted)">Install globally</span>
+        </div>
+        <div class="install-line">
+          <span class="prompt">$</span>
+          <span style="color:var(--text)">npm install -g ai-spec-dev</span>
+        </div>
+        <br/>
+        <div class="install-line">
+          <span class="prompt">#</span>
+          <span style="color:var(--muted)">Set your API key (any provider)</span>
+        </div>
+        <div class="install-line">
+          <span class="prompt">$</span>
+          <span style="color:var(--text)">export GEMINI_API_KEY=<span style="color:var(--yellow)">your_key_here</span></span>
+        </div>
+        <br/>
+        <div class="install-line">
+          <span class="prompt">#</span>
+          <span style="color:var(--muted)">Register your repo + generate constitution</span>
+        </div>
+        <div class="install-line">
+          <span class="prompt">$</span>
+          <span style="color:var(--text)">ai-spec init</span>
+        </div>
+        <br/>
+        <div class="install-line">
+          <span class="prompt">#</span>
+          <span style="color:var(--muted)">Start developing</span>
+        </div>
+        <div class="install-line">
+          <span class="prompt">$</span>
+          <span style="color:var(--text)">ai-spec create <span style="color:var(--cyan)">"Add user authentication to my app"</span></span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+        <a href="https://www.npmjs.com/package/ai-spec-dev" target="_blank" class="btn-primary">View on npm →</a>
+        <a href="https://github.com/hzhongzhong/ai-spec" target="_blank" class="btn-secondary">GitHub Repo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────────── -->
+<hr class="full-divider" />
+<footer>
+  <div class="footer-logo">ai-spec</div>
+  <div class="footer-links">
+    <a href="https://github.com/hzhongzhong/ai-spec" target="_blank">GitHub</a>
+    <a href="https://www.npmjs.com/package/ai-spec-dev" target="_blank">npm</a>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#features">Features</a>
+  </div>
+  <div class="footer-copy">MIT License · Built with AI, for AI-driven development.</div>
+</footer>
+
+<script>
+  // Intersection Observer for fade-in animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
