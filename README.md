@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://github.com/hzhongzhong/ai-spec"><img src="https://img.shields.io/badge/GitHub-ai--spec-181717?logo=github" alt="GitHub" /></a>
   <a href="https://www.npmjs.com/package/ai-spec-dev"><img src="https://img.shields.io/npm/v/ai-spec-dev?color=cb3837&logo=npm" alt="npm" /></a>
-  <img src="https://img.shields.io/badge/version-0.59.0-blue" alt="version" />
+  <img src="https://img.shields.io/badge/version-0.60.0-blue" alt="version" />
   <img src="https://img.shields.io/badge/tests-913%20passed-brightgreen" alt="tests" />
   <img src="https://img.shields.io/badge/providers-9-orange" alt="providers" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="license" />
