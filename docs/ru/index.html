@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ai-spec — AI-Driven Development Orchestrator</title>
-  <meta name="description" content="From a single sentence to production-ready code. The complete AI-driven development pipeline with spec, DSL, codegen, review, and self-eval." />
+  <title>ai-spec — Конвейер разработки на базе ИИ</title>
+  <meta name="description" content="От одной фразы до готового к продакшну кода. Полный конвейер разработки на базе ИИ: spec, DSL-контракт, codegen, ревью и самооценка." />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://ai-spec.dev/" />
-  <meta property="og:title" content="ai-spec — One sentence → production-ready code" />
-  <meta property="og:description" content="AI-driven development orchestrator. 10-step pipeline: spec, DSL contract, task-layered codegen, 3-pass review, harness self-eval. Supports 9 AI providers." />
+  <meta property="og:url" content="https://ai-spec.dev/ru/" />
+  <meta property="og:title" content="ai-spec — Одна фраза → готовый к продакшну код" />
+  <meta property="og:description" content="Конвейер разработки на базе ИИ. 10 шагов от требования до проверяемого кода: spec → DSL → послойный codegen → 3-pass ревью → самооценка. Поддерживает 9 провайдеров ИИ." />
   <meta property="og:image" content="https://raw.githubusercontent.com/hzhongzhong/ai-spec/main/docs-assets/demo.gif" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="ai-spec — One sentence → production-ready code" />
-  <meta name="twitter:description" content="AI-driven development orchestrator. 10-step pipeline, 9 AI providers, 913+ tests." />
+  <meta name="twitter:title" content="ai-spec — Одна фраза → готовый к продакшну код" />
+  <meta name="twitter:description" content="Конвейер разработки на базе ИИ. 10 шагов, 9 провайдеров, 913+ тестов." />
   <meta name="twitter:image" content="https://raw.githubusercontent.com/hzhongzhong/ai-spec/main/docs-assets/demo.gif" />
-  <link rel="canonical" href="https://ai-spec.dev/" />
+  <link rel="canonical" href="https://ai-spec.dev/ru/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
@@ -479,19 +479,19 @@
 <nav>
   <div class="nav-logo">ai-spec</div>
   <div class="nav-links">
-    <a href="#features">Features</a>
-    <a href="#pipeline">Pipeline</a>
+    <a href="#features">Возможности</a>
+    <a href="#pipeline">Конвейер</a>
     <a href="#multirepo">Multi-Repo</a>
-    <a href="#providers">Providers</a>
-    <a href="#install">Install</a>
+    <a href="#providers">Провайдеры</a>
+    <a href="#install">Установка</a>
     <a href="https://github.com/hzhongzhong/ai-spec" target="_blank">GitHub</a>
     <details class="lang-switch">
-      <summary>🌐 EN</summary>
+      <summary>🌐 RU</summary>
       <div class="lang-switch-menu">
-        <a href="/" aria-current="page">English</a>
+        <a href="/">English</a>
         <a href="/zh/">简体中文</a>
         <a href="/fr/">Français</a>
-        <a href="/ru/">Русский</a>
+        <a href="/ru/" aria-current="page">Русский</a>
       </div>
     </details>
     <a href="https://www.npmjs.com/package/ai-spec-dev" target="_blank" class="nav-cta">npm install</a>
@@ -503,28 +503,28 @@
   <div class="hero-glow"></div>
   <div class="hero-glow2"></div>
 
-  <div class="badge"><span class="badge-dot"></span> v0.60.0 · Now Available</div>
+  <div class="badge"><span class="badge-dot"></span> v0.60.0 · Доступно сейчас</div>
 
   <h1>
-    One sentence.<br/>
-    <span class="grad-text">Production-ready code.</span>
+    Одна фраза.<br/>
+    <span class="grad-text">Готовый к продакшну код.</span>
   </h1>
 
   <p class="hero-sub">
-    ai-spec is an AI-driven development orchestrator — from a single requirement to
-    fully reviewed, test-covered, spec-aligned code, in minutes.
+    ai-spec — это конвейер разработки на базе ИИ. От одного требования до полностью
+    проверенного, покрытого тестами и соответствующего spec кода — за минуты.
   </p>
 
   <div class="hero-buttons">
-    <a href="#install" class="btn-primary">Get Started →</a>
-    <a href="https://github.com/hzhongzhong/ai-spec" target="_blank" class="btn-secondary">View on GitHub</a>
+    <a href="#install" class="btn-primary">Начать →</a>
+    <a href="https://github.com/hzhongzhong/ai-spec" target="_blank" class="btn-secondary">Открыть на GitHub</a>
   </div>
 
   <div class="hero-stats">
-    <div class="stat"><div class="stat-num">9</div><div class="stat-label">AI Providers</div></div>
-    <div class="stat"><div class="stat-num">10</div><div class="stat-label">Pipeline Steps</div></div>
-    <div class="stat"><div class="stat-num">913+</div><div class="stat-label">Tests Passing</div></div>
-    <div class="stat"><div class="stat-num">25+</div><div class="stat-label">Core Modules</div></div>
+    <div class="stat"><div class="stat-num">9</div><div class="stat-label">Провайдеров ИИ</div></div>
+    <div class="stat"><div class="stat-num">10</div><div class="stat-label">Шагов конвейера</div></div>
+    <div class="stat"><div class="stat-num">913+</div><div class="stat-label">Пройденных тестов</div></div>
+    <div class="stat"><div class="stat-num">25+</div><div class="stat-label">Основных модулей</div></div>
   </div>
 
   <div class="hero-demo fade-in">
@@ -536,40 +536,40 @@
 
 <!-- ── Problem ───────────────────────────────────────────────────────────────── -->
 <section id="problem" class="fade-in">
-  <div class="section-tag">The Problem</div>
-  <h2>Why existing AI tools<br/><span class="grad-text">aren't enough</span></h2>
-  <p class="section-sub">Every AI coding tool faces the same structural limitations. ai-spec is designed to address all of them.</p>
+  <div class="section-tag">Проблема</div>
+  <h2>Почему существующих ИИ-инструментов<br/><span class="grad-text">недостаточно</span></h2>
+  <p class="section-sub">Все ИИ-инструменты для написания кода сталкиваются с одними и теми же структурными ограничениями. ai-spec спроектирован, чтобы их устранить.</p>
 
   <div class="problems-grid">
     <div class="problem-card">
       <div class="problem-icon">🧠</div>
-      <div class="problem-title">No Project Memory</div>
-      <div class="problem-desc">AI doesn't know your error codes, middleware setup, or i18n constraints. Every conversation starts from zero — like code from a new hire who's never seen your codebase.</div>
+      <div class="problem-title">Нет памяти проекта</div>
+      <div class="problem-desc">ИИ не знает ваши коды ошибок, конфигурацию middleware или ограничения i18n. Каждый разговор начинается с нуля — как код от новичка, который никогда не видел вашу codebase.</div>
     </div>
     <div class="problem-card">
       <div class="problem-icon">🕳️</div>
-      <div class="problem-title">No Structured Middle Layer</div>
-      <div class="problem-desc">Natural language jumps directly to code. No reviewable, versionable contract in between. Misunderstandings are discovered in code — at high cost.</div>
+      <div class="problem-title">Нет структурированного промежуточного слоя</div>
+      <div class="problem-desc">Естественный язык напрямую переходит в код. Между ними нет проверяемого, версионируемого контракта. Недопонимания обнаруживаются в коде — ценой высоких затрат.</div>
     </div>
     <div class="problem-card">
       <div class="problem-icon">💥</div>
-      <div class="problem-title">All-or-nothing Generation</div>
-      <div class="problem-desc">Generate a whole feature at once. One error fails everything. No checkpointing, no resume — failures restart from scratch.</div>
+      <div class="problem-title">Генерация по принципу «всё или ничего»</div>
+      <div class="problem-desc">Целая фича генерируется за один раз. Одна ошибка валит всё. Никаких checkpoint, никакого resume — отказы начинаются заново.</div>
     </div>
     <div class="problem-card">
       <div class="problem-icon">🚪</div>
-      <div class="problem-title">Generate and Exit</div>
-      <div class="problem-desc">Did tests pass? Any lint errors? Architecture violations? You have to check everything manually after the tool exits.</div>
+      <div class="problem-title">Сгенерировал и вышел</div>
+      <div class="problem-desc">Прошли ли тесты? Есть ли ошибки lint? Нарушения архитектуры? Вам приходится проверять всё вручную после того, как инструмент закончил работу.</div>
     </div>
     <div class="problem-card">
       <div class="problem-icon">📉</div>
-      <div class="problem-title">Experience Lost Every Time</div>
-      <div class="problem-desc">A security bug found in review? AI will repeat it next time. Team engineering knowledge can't systematically constrain AI behavior.</div>
+      <div class="problem-title">Каждый раз опыт теряется</div>
+      <div class="problem-desc">Нашли баг безопасности на ревью? ИИ повторит его в следующий раз. Инженерные знания команды не могут систематически ограничивать поведение ИИ.</div>
     </div>
     <div class="problem-card">
       <div class="problem-icon">👻</div>
-      <div class="problem-title">Cross-task Hallucinations</div>
-      <div class="problem-desc">Task B hallucinates function names from Task A — even though both files are in the same PR. Without a shared cache, AI guesses instead of reads.</div>
+      <div class="problem-title">Галлюцинации между задачами</div>
+      <div class="problem-desc">Задача B выдумывает имена функций из задачи A — даже если оба файла лежат в одном PR. Без общего кэша ИИ угадывает, а не читает.</div>
     </div>
   </div>
 </section>
@@ -578,32 +578,32 @@
 
 <!-- ── Pipeline ──────────────────────────────────────────────────────────────── -->
 <section id="pipeline" class="fade-in">
-  <div class="section-tag">The Pipeline</div>
-  <h2>Every step, <span class="grad-text">orchestrated</span></h2>
-  <p class="section-sub">A fully automated 10-step pipeline from idea to reviewed, scored, production-ready code.</p>
+  <div class="section-tag">Конвейер</div>
+  <h2>Каждый шаг, <span class="grad-text">оркестрован</span></h2>
+  <p class="section-sub">Полностью автоматизированный 10-шаговый конвейер от идеи до проверенного, оценённого и готового к продакшну кода.</p>
 
   <div class="pipeline-flow">
-    <span class="pipe-step highlight">[1/10] Context</span>
+    <span class="pipe-step highlight">[1/10] Контекст</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step highlight">[2/10] Spec + Tasks</span>
+    <span class="pipe-step highlight">[2/10] Spec + Задачи</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step highlight">[3/10] Refinement</span>
+    <span class="pipe-step highlight">[3/10] Уточнение</span>
     <span class="pipe-arrow">→</span>
     <span class="pipe-step">[3.4/10] Quality Gate</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step">[Gate] Approval</span>
+    <span class="pipe-step">[Gate] Подтверждение</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step highlight">[DSL] Contract</span>
+    <span class="pipe-step highlight">[DSL] Контракт</span>
     <span class="pipe-arrow">→</span>
     <span class="pipe-step">[Git] Worktree</span>
     <span class="pipe-arrow">→</span>
     <span class="pipe-step highlight">[6/10] Codegen</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step">[7/10] Tests</span>
+    <span class="pipe-step">[7/10] Тесты</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step">[8/10] Auto-fix</span>
+    <span class="pipe-step">[8/10] Авто-фикс</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step highlight">[9/10] 3-pass Review</span>
+    <span class="pipe-step highlight">[9/10] 3-pass Ревью</span>
     <span class="pipe-arrow">→</span>
     <span class="pipe-step highlight">[10/10] Harness Eval</span>
   </div>
@@ -611,43 +611,43 @@
   <div class="pipeline-cards">
     <div class="pipe-card">
       <div class="pipe-num">[1/10] CONTEXT LOAD</div>
-      <h3>Project-Aware from the Start</h3>
-      <p>Scans routes, schemas, dependencies, middleware, and the project constitution. Every prompt is grounded in your actual codebase — not a generic template.</p>
+      <h3>Понимает проект с самого начала</h3>
+      <p>Сканирует маршруты, схемы, зависимости, middleware и конституцию проекта. Каждый prompt опирается на ваш реальный codebase — не на универсальный шаблон.</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[2/10] SPEC + TASKS</div>
-      <h3>Structured Spec with Task Decomposition</h3>
-      <p>Generates a human-readable Markdown spec and decomposes it into ordered tasks: data → service → api → view → route → test. One AI call, complete output.</p>
+      <h3>Структурированный Spec с разбивкой на задачи</h3>
+      <p>Генерирует читаемый человеком Markdown spec и разбивает его на упорядоченные задачи: data → service → api → view → route → test. Один вызов ИИ, полный вывод.</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[3/10] REFINEMENT</div>
-      <h3>Interactive Polish with Diff Preview</h3>
-      <p>AI polishes the spec and shows a colored diff. You approve, reject, or request changes. Multiple rounds supported — no code is written until you say so.</p>
+      <h3>Интерактивное уточнение с предпросмотром diff</h3>
+      <p>ИИ дорабатывает spec и показывает цветной diff. Вы принимаете, отклоняете или просите изменений. Поддерживается несколько раундов — никакой код не пишется, пока вы не скажете.</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[DSL] CONTRACT</div>
-      <h3>Machine-Readable Dual Contract</h3>
-      <p>Extracts a SpecDSL JSON — models, endpoints, behaviors — from the spec. Validated against 9 schema rules. The single source of truth for codegen, tests, and exports.</p>
+      <h3>Машиночитаемый двойной контракт</h3>
+      <p>Из spec извлекается SpecDSL JSON — модели, endpoint-ы, behaviors. Прогоняется через структурные правила валидации. Единый источник истины для codegen, тестов и экспортов.</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[6/10] CODEGEN</div>
-      <h3>Task-Layered Generation with File Cache</h3>
-      <p>Generates file-by-file in dependency order. Each completed file's exports are cached and injected into subsequent prompts — eliminating cross-task hallucinations.</p>
+      <h3>Послойная генерация с кэшем файлов</h3>
+      <p>Генерирует файл за файлом в порядке зависимостей. Экспорты каждого готового файла кэшируются и подставляются в последующие prompt-ы — устраняя галлюцинации между задачами.</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[8/10] AUTO-FIX</div>
-      <h3>Error Feedback Loop — Up to 3 Cycles</h3>
-      <p>Runs npm test / lint / tsc, parses errors by file, and sends targeted AI fixes with DSL context. Dependency-sorted repair order maximizes cycle efficiency.</p>
+      <h3>Цикл обратной связи по ошибкам — до 3 раундов</h3>
+      <p>Запускает npm test / lint / tsc, разбирает ошибки по файлам и шлёт ИИ точечные правки с контекстом DSL. Порядок починки, отсортированный по зависимостям, максимизирует эффективность каждого цикла.</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[9/10] 3-PASS REVIEW</div>
-      <h3>Architecture + Implementation + Impact</h3>
-      <p>Pass 1: architecture & spec compliance. Pass 2: implementation correctness & edge cases. Pass 3: blast radius, complexity score, breaking change risk.</p>
+      <h3>Архитектура + Реализация + Влияние</h3>
+      <p>Pass 1: соответствие архитектуре и spec. Pass 2: правильность реализации и крайние случаи. Pass 3: радиус взрыва, оценка сложности, риск breaking change.</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[10/10] HARNESS EVAL</div>
-      <h3>Automated Quality Score</h3>
-      <p>Scores on 4 dimensions: compliance (30%) + DSL coverage (25%) + compile (20%) + review (25%). Linked to prompt hash — tracks quality over time with zero AI calls.</p>
+      <h3>Автоматическая оценка качества</h3>
+      <p>Оценка по 4 измерениям: compliance (30%) + покрытие DSL (25%) + компиляция (20%) + ревью (25%). Привязана к хэшу prompt — отслеживает качество во времени, без дополнительных вызовов ИИ.</p>
     </div>
   </div>
 </section>
@@ -656,65 +656,65 @@
 
 <!-- ── Features ──────────────────────────────────────────────────────────────── -->
 <section id="features" class="fade-in">
-  <div class="section-tag">Core Features</div>
-  <h2>Everything you need to<br/><span class="grad-text">ship with confidence</span></h2>
-  <p class="section-sub">Every feature addresses a real pain point in AI-assisted development.</p>
+  <div class="section-tag">Основные возможности</div>
+  <h2>Всё, что нужно,<br/><span class="grad-text">чтобы выкатить уверенно</span></h2>
+  <p class="section-sub">Каждая возможность решает реальную боль разработки с ИИ.</p>
 
   <div class="features-grid">
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(34,211,238,0.1)">📜</div>
-      <h3>Project Constitution System</h3>
-      <p>Self-evolving knowledge base (§1–§9) that auto-injects into every prompt. Scans routes, middleware, schema, and conventions on init. Grows smarter with every review via §9 lesson accumulation.</p>
+      <h3>Система конституции проекта</h3>
+      <p>Самоэволюционирующая база знаний (§1–§9), автоматически встраиваемая в каждый prompt. На init сканирует маршруты, middleware, схемы и соглашения. Становится умнее с каждым ревью благодаря накоплению уроков в §9.</p>
       <span class="feature-tag" style="background:rgba(34,211,238,0.08);color:var(--cyan)">ai-spec init</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(59,130,246,0.1)">🎯</div>
-      <h3>Dual-Layer Contract</h3>
-      <p>Human-readable Markdown Spec for engineers to review and align on. Machine-readable SpecDSL JSON for tools to consume. Both versioned, both auditable. Codegen, tests, and exports all share one contract.</p>
+      <h3>Двухслойный контракт</h3>
+      <p>Читаемый человеком Markdown Spec — для ревью и согласования между инженерами. Машиночитаемый SpecDSL JSON — для потребления инструментами. Оба версионируются, оба аудируемы. Codegen, тесты и экспорты работают с одним контрактом.</p>
       <span class="feature-tag" style="background:rgba(59,130,246,0.08);color:var(--blue)">Spec + DSL</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(34,197,94,0.1)">🔄</div>
-      <h3>Dual Feedback Loops</h3>
-      <p>DSL Gap Loop: detects sparse contracts before codegen and triggers targeted spec enrichment. Review→DSL Loop: structural review issues feed back into the contract — so the next run starts cleaner.</p>
-      <span class="feature-tag" style="background:rgba(34,197,94,0.08);color:var(--green)">Self-correcting</span>
+      <h3>Двойные циклы обратной связи</h3>
+      <p>DSL Gap Loop: обнаруживает разрежённые контракты до codegen и запускает точечное обогащение spec. Review→DSL Loop: структурные проблемы из ревью возвращаются в контракт — следующий запуск начинается чище.</p>
+      <span class="feature-tag" style="background:rgba(34,197,94,0.08);color:var(--green)">Самокорректирующийся</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(250,204,21,0.1)">⚡</div>
-      <h3>VCR Record & Replay</h3>
-      <p>Record real AI responses on first run. Replay them deterministically in subsequent runs — zero API calls, zero cost. Iterate on pipeline logic and UI without burning tokens.</p>
+      <h3>VCR: запись и воспроизведение</h3>
+      <p>Записывайте реальные ответы ИИ при первом запуске. Воспроизводите их детерминированно в последующих — ноль вызовов API, ноль затрат. Итерируйте логику конвейера и UI, не сжигая токены.</p>
       <span class="feature-tag" style="background:rgba(250,204,21,0.08);color:var(--yellow)">ai-spec create --vcr-record</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(139,92,246,0.1)">🛡️</div>
-      <h3>Approval Gate</h3>
-      <p>Human review happens at the right moment: after the spec is clear and the DSL is valid, but before any code is written. Abort means zero disk residue. Proceed means every step has a verified contract to follow.</p>
+      <h3>Точка подтверждения</h3>
+      <p>Ревью человеком происходит в нужный момент: spec ясен, DSL валиден, но ни один файл ещё не записан. Abort = ноль следов на диске. Continue = каждый следующий шаг идёт по проверенному контракту.</p>
       <span class="feature-tag" style="background:rgba(139,92,246,0.08);color:var(--violet)">[Gate] checkpoint</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(248,113,113,0.1)">🔁</div>
-      <h3>Fix-History Self-Learning</h3>
-      <p>Every successful import fix is appended to a ledger. On the next codegen run, a "DO NOT REPEAT" section is automatically injected into prompts — preventing the same hallucination from ever reoccurring.</p>
-      <span class="feature-tag" style="background:rgba(248,113,113,0.08);color:var(--red)">v0.54+ zero-cost learning</span>
+      <h3>Самообучение Fix-History</h3>
+      <p>Каждый успешный фикс import-а добавляется в ledger. При следующем запуске codegen в prompt автоматически подставляется секция «DO NOT REPEAT» — не давая той же галлюцинации повториться.</p>
+      <span class="feature-tag" style="background:rgba(248,113,113,0.08);color:var(--red)">v0.54+ обучение без затрат</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(34,211,238,0.1)">↩️</div>
-      <h3>Instant Rollback</h3>
-      <p>Every run gets a unique RunId. Before any file is written, the original content is snapshotted. One command restores your entire repo to pre-run state — precise to the file, precise to the run.</p>
+      <h3>Мгновенный откат</h3>
+      <p>Каждый запуск получает уникальный RunId. Перед записью любого файла его исходное содержимое снимается в snapshot. Одна команда возвращает весь репозиторий к состоянию до запуска — с точностью до файла, с точностью до запуска.</p>
       <span class="feature-tag" style="background:rgba(34,211,238,0.08);color:var(--cyan)">ai-spec restore &lt;runId&gt;</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(34,197,94,0.1)">🌐</div>
-      <h3>9 AI Providers</h3>
-      <p>Gemini, Claude, OpenAI, DeepSeek, Qwen, GLM, MiniMax, Doubao, MiMo. Mix and match: use one model for spec generation, another for codegen. Per-run provider override supported.</p>
+      <h3>9 провайдеров ИИ</h3>
+      <p>Gemini, Claude, OpenAI, DeepSeek, Qwen, GLM, MiniMax, Doubao, MiMo. Комбинируйте: одна модель для генерации spec, другая для codegen. Поддерживается переопределение провайдера для каждого запуска.</p>
       <span class="feature-tag" style="background:rgba(34,197,94,0.08);color:var(--green)">--provider --codegen-provider</span>
     </div>
 
@@ -727,37 +727,37 @@
 <section id="multirepo" class="fade-in" style="padding:5rem 2rem">
   <div class="multirepo-section">
     <div class="section-tag">Multi-Repo Workspace</div>
-    <h2>Full-stack in<br/><span class="grad-text">one command</span></h2>
-    <p class="section-sub">The only pipeline that wires your backend and frontend together — automatically.</p>
+    <h2>Full-stack одной<br/><span class="grad-text">командой</span></h2>
+    <p class="section-sub">Единственный конвейер, который автоматически связывает ваш backend и frontend.</p>
 
     <div class="multirepo-diagram">
       <div class="repo-box">
         <div class="repo-title">🖥️ Backend — node-express</div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">[W2] Spec + DSL generated</span></div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">Models, endpoints, behaviors extracted</span></div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">Code generated + reviewed</span></div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--green)"></span><span class="repo-step-text">DSL contract ready for handoff →</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">[W2] Spec + DSL сгенерированы</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">Модели, endpoint-ы, behaviors извлечены</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">Код сгенерирован + ревью пройдено</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--green)"></span><span class="repo-step-text">DSL-контракт готов к передаче →</span></div>
       </div>
 
       <div class="contract-box">
         <div class="contract-arrow">⬇</div>
-        <div class="contract-badge">DSL Contract<br/>5 endpoints<br/>3 models</div>
+        <div class="contract-badge">DSL-контракт<br/>5 endpoint<br/>3 модели</div>
         <div class="contract-arrow">⬇</div>
-        <div style="font-size:0.72rem;color:var(--muted);text-align:center">injected into<br/>frontend pipeline</div>
+        <div style="font-size:0.72rem;color:var(--muted);text-align:center">встраивается в<br/>конвейер frontend</div>
       </div>
 
       <div class="repo-box">
         <div class="repo-title">🖼️ Frontend — vue / react</div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">[W4] Spec generated with backend contract</span></div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">HTTP client calls pre-aligned to DSL</span></div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">Code generated + reviewed</span></div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--green)"></span><span class="repo-step-text">[W5] Cross-stack verifier: 0 phantoms ✔</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">[W4] Spec сгенерирован с backend-контрактом</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">HTTP-вызовы предварительно выровнены под DSL</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">Код сгенерирован + ревью пройдено</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--green)"></span><span class="repo-step-text">[W5] Cross-stack verifier: 0 phantom ✔</span></div>
       </div>
     </div>
 
     <div style="margin-top:2.5rem;padding:1.5rem;background:rgba(34,211,238,0.04);border:1px solid rgba(34,211,238,0.12);border-radius:10px;">
-      <div style="font-size:0.8rem;font-weight:600;color:var(--cyan);margin-bottom:0.75rem">✔ Cross-Stack Contract Verification (v0.50+)</div>
-      <p style="font-size:0.84rem;color:var(--muted)">After frontend generation, the cross-stack verifier scans every API call in the frontend code and checks it against the backend DSL. Phantom routes (hallucinated endpoints), method mismatches, and string-concatenated paths are all detected and reported before you push.</p>
+      <div style="font-size:0.8rem;font-weight:600;color:var(--cyan);margin-bottom:0.75rem">✔ Проверка cross-stack контракта (v0.50+)</div>
+      <p style="font-size:0.84rem;color:var(--muted)">После генерации frontend cross-stack verifier сканирует каждый API-вызов в коде frontend и сверяет его с backend DSL. Фантомные маршруты (галлюцинированные endpoint-ы), несовпадения HTTP-метода и пути, склеенные через конкатенацию строк — всё это обнаруживается и докладывается до того, как вы сделаете push.</p>
     </div>
   </div>
 </section>
@@ -766,25 +766,25 @@
 
 <!-- ── DSL Artifacts ──────────────────────────────────────────────────────────── -->
 <section id="artifacts" class="fade-in">
-  <div class="section-tag">DSL-Derived Artifacts</div>
-  <h2>One contract,<br/><span class="grad-text">many outputs</span></h2>
-  <p class="section-sub">The SpecDSL isn't just for codegen — it powers your entire development workflow.</p>
+  <div class="section-tag">Артефакты, производные от DSL</div>
+  <h2>Один контракт,<br/><span class="grad-text">множество выходов</span></h2>
+  <p class="section-sub">SpecDSL — это не только codegen. Он питает весь ваш рабочий процесс разработки.</p>
 
   <div class="artifacts-grid">
     <div class="artifact-card">
       <div class="artifact-cmd">ai-spec export</div>
-      <h3>OpenAPI 3.1.0 Export</h3>
-      <p>DSL → production-ready YAML or JSON. Plug directly into Postman, Swagger UI, or any SDK generator.</p>
+      <h3>Экспорт OpenAPI 3.1.0</h3>
+      <p>DSL → готовый к продакшну YAML или JSON. Подключайте напрямую в Postman, Swagger UI или любой генератор SDK.</p>
       <div class="artifact-outputs">
         <div class="artifact-output">openapi.yaml (3.1.0)</div>
-        <div class="artifact-output">Paths, schemas, parameters, responses</div>
+        <div class="artifact-output">paths, schemas, parameters, responses</div>
         <div class="artifact-output">--format json · --server &lt;url&gt;</div>
       </div>
     </div>
     <div class="artifact-card">
       <div class="artifact-cmd">ai-spec mock</div>
-      <h3>Instant Mock Server</h3>
-      <p>DSL → Express mock server + MSW handlers + Vite proxy config. Frontend development without waiting for the backend.</p>
+      <h3>Мгновенный Mock Server</h3>
+      <p>DSL → Express mock server + MSW handlers + конфиг Vite-прокси. Разработка frontend без ожидания backend.</p>
       <div class="artifact-outputs">
         <div class="artifact-output">mock/server.js (Express)</div>
         <div class="artifact-output">mock/handlers.ts (MSW)</div>
@@ -793,22 +793,22 @@
     </div>
     <div class="artifact-card">
       <div class="artifact-cmd">ai-spec types</div>
-      <h3>TypeScript Types</h3>
-      <p>DSL → typed interfaces, request/response types, and API endpoint constants. Shared across frontend and backend.</p>
+      <h3>Типы TypeScript</h3>
+      <p>DSL → типизированные интерфейсы, типы request/response и константы API endpoint-ов. Общие для frontend и backend.</p>
       <div class="artifact-outputs">
         <div class="artifact-output">export interface Model {}</div>
         <div class="artifact-output">export const API_ENDPOINTS</div>
-        <div class="artifact-output">Request & Response types</div>
+        <div class="artifact-output">Типы Request & Response</div>
       </div>
     </div>
     <div class="artifact-card">
       <div class="artifact-cmd">ai-spec dashboard</div>
       <h3>Harness Dashboard</h3>
-      <p>Generate a static HTML quality dashboard. Track harness scores, compliance rates, and review trends across all runs.</p>
+      <p>Генерирует статичный HTML-дашборд качества. Отслеживайте harness-оценки, уровень compliance и тренды ревью по всем запускам.</p>
       <div class="artifact-outputs">
-        <div class="artifact-output">Static HTML, no server needed</div>
-        <div class="artifact-output">Score trend charts</div>
-        <div class="artifact-output">Per-run stage breakdown</div>
+        <div class="artifact-output">Статический HTML, без сервера</div>
+        <div class="artifact-output">Графики трендов оценок</div>
+        <div class="artifact-output">Разбивка по этапам каждого запуска</div>
       </div>
     </div>
   </div>
@@ -820,31 +820,31 @@
 <section id="code" class="fade-in">
   <div class="code-section">
     <div>
-      <div class="section-tag">Live Output</div>
-      <h2>What the pipeline<br/><span class="grad-text">actually outputs</span></h2>
+      <div class="section-tag">Реальный вывод</div>
+      <h2>Что конвейер<br/><span class="grad-text">на самом деле выдаёт</span></h2>
       <p style="color:var(--muted);font-size:0.95rem;line-height:1.7;margin-top:1rem">
-        Every step is visible, every decision is auditable.
-        No black box — you see exactly what's happening,
-        what scored how, and what was fixed automatically.
+        Каждый шаг виден, каждое решение проверяемо.
+        Никакой чёрной коробки — вы видите ровно то, что происходит,
+        что и как было оценено, и что было исправлено автоматически.
       </p>
       <div style="margin-top:2rem;display:flex;flex-direction:column;gap:0.75rem">
         <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
-          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Spec quality assessment with per-dimension scores</span>
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Оценка качества spec с разбивкой по измерениям</span>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
-          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">DSL extraction with validation summary</span>
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Извлечение DSL со сводкой валидации</span>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
-          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Per-file codegen with layer labels</span>
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Codegen по файлам с метками слоёв</span>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
-          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Error auto-fix with cycle count</span>
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Авто-фикс ошибок со счётчиком циклов</span>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
-          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">3-pass review with per-pass verdicts</span>
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Ревью в 3 прохода с вердиктом по каждому проходу</span>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
-          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Final harness score breakdown (4 dimensions)</span>
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Итоговая разбивка harness-оценки (4 измерения)</span>
         </div>
       </div>
     </div>
@@ -901,14 +901,14 @@
 
 <!-- ── Observability ──────────────────────────────────────────────────────────── -->
 <section id="observability" class="fade-in">
-  <div class="section-tag">Observability</div>
-  <h2>Quality you can<br/><span class="grad-text">measure and track</span></h2>
-  <p class="section-sub">ai-spec turns code generation quality into data — comparable, trackable, and improvable over time.</p>
+  <div class="section-tag">Наблюдаемость</div>
+  <h2>Качество, которое можно<br/><span class="grad-text">измерить и отследить</span></h2>
+  <p class="section-sub">ai-spec превращает качество генерации кода в данные — сопоставимые, отслеживаемые, улучшаемые во времени.</p>
 
   <div class="obs-grid">
     <div class="obs-card">
-      <h3>Harness Score Trend</h3>
-      <p>Track quality across all runs. See if your pipeline is improving.</p>
+      <h3>Тренд Harness-оценки</h3>
+      <p>Отслеживайте качество по всем запускам. Видите, улучшается ли ваш конвейер.</p>
       <div class="score-bar"><span class="score-label">Run 1</span><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div><span class="score-val">70</span></div>
       <div class="score-bar"><span class="score-label">Run 2</span><div class="bar-track"><div class="bar-fill" style="width:74%"></div></div><span class="score-val">74</span></div>
       <div class="score-bar"><span class="score-label">Run 3</span><div class="bar-track"><div class="bar-fill" style="width:82%"></div></div><span class="score-val">82</span></div>
@@ -917,8 +917,8 @@
     </div>
 
     <div class="obs-card">
-      <h3>Per-Run Stage Logs</h3>
-      <p>Every stage is timed and logged to <code style="font-family:monospace;font-size:0.8em;color:var(--cyan)">.ai-spec-logs/&lt;runId&gt;.json</code>.</p>
+      <h3>Журналы этапов каждого запуска</h3>
+      <p>Каждый этап замеряется по времени и пишется в <code style="font-family:monospace;font-size:0.8em;color:var(--cyan)">.ai-spec-logs/&lt;runId&gt;.json</code>.</p>
       <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted);margin-top:1rem;line-height:2">
         <div><span style="color:var(--cyan)">context_load</span>   312ms</div>
         <div><span style="color:var(--cyan)">spec_gen</span>       18.4s</div>
@@ -931,27 +931,27 @@
     </div>
 
     <div class="obs-card">
-      <h3>4-Dimension Scoring</h3>
-      <p>The harness score is deterministic — no AI calls after generation completes.</p>
+      <h3>Оценка по 4 измерениям</h3>
+      <p>Harness-оценка детерминирована — после завершения генерации никаких вызовов ИИ.</p>
       <div style="margin-top:1rem;display:flex;flex-direction:column;gap:0.75rem">
         <div style="display:flex;justify-content:space-between;font-size:0.82rem">
           <span style="color:var(--muted)">Compliance</span><span style="color:var(--cyan);font-weight:600">30%</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:0.82rem">
-          <span style="color:var(--muted)">DSL Coverage</span><span style="color:var(--cyan);font-weight:600">25%</span>
+          <span style="color:var(--muted)">Покрытие DSL</span><span style="color:var(--cyan);font-weight:600">25%</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:0.82rem">
-          <span style="color:var(--muted)">Compile Pass</span><span style="color:var(--cyan);font-weight:600">20%</span>
+          <span style="color:var(--muted)">Компиляция OK</span><span style="color:var(--cyan);font-weight:600">20%</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:0.82rem">
-          <span style="color:var(--muted)">Review Score</span><span style="color:var(--cyan);font-weight:600">25%</span>
+          <span style="color:var(--muted)">Оценка ревью</span><span style="color:var(--cyan);font-weight:600">25%</span>
         </div>
       </div>
     </div>
 
     <div class="obs-card">
-      <h3>Instant Rollback</h3>
-      <p>Don't like the result? One command restores all modified files to their pre-run state.</p>
+      <h3>Мгновенный откат</h3>
+      <p>Не нравится результат? Одна команда восстанавливает все изменённые файлы к состоянию до запуска.</p>
       <div style="margin-top:1rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:0.78rem">
         <div style="color:var(--cyan)">$ ai-spec restore 20260409-a7f2</div>
         <div style="color:var(--muted);margin-top:0.5rem">↩ src/api/task.ts</div>
@@ -967,9 +967,9 @@
 
 <!-- ── Providers ──────────────────────────────────────────────────────────────── -->
 <section id="providers" class="fade-in">
-  <div class="section-tag">AI Providers</div>
-  <h2>9 providers,<br/><span class="grad-text">your choice</span></h2>
-  <p class="section-sub">Use any combination of providers. Mix a reasoning model for spec generation with a fast model for codegen.</p>
+  <div class="section-tag">Провайдеры ИИ</div>
+  <h2>9 провайдеров,<br/><span class="grad-text">на ваш выбор</span></h2>
+  <p class="section-sub">Используйте любую комбинацию провайдеров. Совместите рассуждающую модель для генерации spec с быстрой моделью для codegen.</p>
 
   <div class="marquee-wrapper">
     <div class="marquee-track" id="marquee-track">
@@ -1187,14 +1187,14 @@
 <section id="install" class="fade-in" style="max-width:1200px;margin:0 auto">
   <div class="install-section">
     <div class="install-box">
-      <div class="section-tag" style="justify-content:center;display:flex">Quick Start</div>
-      <h2>Ready in <span class="grad-text">60 seconds</span></h2>
-      <p style="color:var(--muted);margin-top:0.75rem">Install globally, set your API key, register a repo, and start shipping.</p>
+      <div class="section-tag" style="justify-content:center;display:flex">Быстрый старт</div>
+      <h2>Готово за <span class="grad-text">60 секунд</span></h2>
+      <p style="color:var(--muted);margin-top:0.75rem">Установите глобально, задайте API-ключ, зарегистрируйте репозиторий — и начинайте выкатывать.</p>
 
       <div class="install-code">
         <div class="install-line">
           <span class="prompt">#</span>
-          <span style="color:var(--muted)">Install globally</span>
+          <span style="color:var(--muted)">Глобальная установка</span>
         </div>
         <div class="install-line">
           <span class="prompt">$</span>
@@ -1203,16 +1203,16 @@
         <br/>
         <div class="install-line">
           <span class="prompt">#</span>
-          <span style="color:var(--muted)">Set your API key (any provider)</span>
+          <span style="color:var(--muted)">Задайте API-ключ (любой провайдер)</span>
         </div>
         <div class="install-line">
           <span class="prompt">$</span>
-          <span style="color:var(--text)">export GEMINI_API_KEY=<span style="color:var(--yellow)">your_key_here</span></span>
+          <span style="color:var(--text)">export GEMINI_API_KEY=<span style="color:var(--yellow)">ваш_ключ_здесь</span></span>
         </div>
         <br/>
         <div class="install-line">
           <span class="prompt">#</span>
-          <span style="color:var(--muted)">Register your repo + generate constitution</span>
+          <span style="color:var(--muted)">Зарегистрируйте репозиторий + сгенерируйте конституцию</span>
         </div>
         <div class="install-line">
           <span class="prompt">$</span>
@@ -1221,17 +1221,17 @@
         <br/>
         <div class="install-line">
           <span class="prompt">#</span>
-          <span style="color:var(--muted)">Start developing</span>
+          <span style="color:var(--muted)">Начните разрабатывать</span>
         </div>
         <div class="install-line">
           <span class="prompt">$</span>
-          <span style="color:var(--text)">ai-spec create <span style="color:var(--cyan)">"Add user authentication to my app"</span></span>
+          <span style="color:var(--text)">ai-spec create <span style="color:var(--cyan)">"Добавить аутентификацию пользователей в моё приложение"</span></span>
         </div>
       </div>
 
       <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
-        <a href="https://www.npmjs.com/package/ai-spec-dev" target="_blank" class="btn-primary">View on npm →</a>
-        <a href="https://github.com/hzhongzhong/ai-spec" target="_blank" class="btn-secondary">GitHub Repo</a>
+        <a href="https://www.npmjs.com/package/ai-spec-dev" target="_blank" class="btn-primary">Открыть на npm →</a>
+        <a href="https://github.com/hzhongzhong/ai-spec" target="_blank" class="btn-secondary">Репозиторий GitHub</a>
       </div>
     </div>
   </div>
@@ -1244,10 +1244,10 @@
   <div class="footer-links">
     <a href="https://github.com/hzhongzhong/ai-spec" target="_blank">GitHub</a>
     <a href="https://www.npmjs.com/package/ai-spec-dev" target="_blank">npm</a>
-    <a href="#pipeline">Pipeline</a>
-    <a href="#features">Features</a>
+    <a href="#pipeline">Конвейер</a>
+    <a href="#features">Возможности</a>
   </div>
-  <div class="footer-copy">MIT License · Built with AI, for AI-driven development.</div>
+  <div class="footer-copy">Лицензия MIT · Создано с ИИ, для разработки на базе ИИ.</div>
 </footer>
 
 <script>

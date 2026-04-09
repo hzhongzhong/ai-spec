@@ -5,16 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ai-spec — AI-Driven Development Orchestrator</title>
   <meta name="description" content="From a single sentence to production-ready code. The complete AI-driven development pipeline with spec, DSL, codegen, review, and self-eval." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://ai-spec.dev/" />
-  <meta property="og:title" content="ai-spec — One sentence → production-ready code" />
-  <meta property="og:description" content="AI-driven development orchestrator. 10-step pipeline: spec, DSL contract, task-layered codegen, 3-pass review, harness self-eval. Supports 9 AI providers." />
-  <meta property="og:image" content="https://raw.githubusercontent.com/hzhongzhong/ai-spec/main/docs-assets/demo.gif" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="ai-spec — One sentence → production-ready code" />
-  <meta name="twitter:description" content="AI-driven development orchestrator. 10-step pipeline, 9 AI providers, 913+ tests." />
-  <meta name="twitter:image" content="https://raw.githubusercontent.com/hzhongzhong/ai-spec/main/docs-assets/demo.gif" />
-  <link rel="canonical" href="https://ai-spec.dev/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
@@ -75,73 +65,6 @@
       text-decoration: none; transition: opacity 0.2s;
     }
     .nav-cta:hover { opacity: 0.85; }
-
-    /* ── Language switcher (zero JS, native <details>) ── */
-    .lang-switch {
-      position: relative;
-      font-size: 0.875rem;
-    }
-    .lang-switch summary {
-      list-style: none;
-      cursor: pointer;
-      color: var(--muted);
-      padding: 0.4rem 0.7rem;
-      border: 1px solid var(--border2);
-      border-radius: 6px;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      transition: color 0.2s, border-color 0.2s;
-      user-select: none;
-    }
-    .lang-switch summary::-webkit-details-marker { display: none; }
-    .lang-switch summary::after {
-      content: '▾';
-      font-size: 0.7rem;
-      opacity: 0.6;
-    }
-    .lang-switch summary:hover {
-      color: var(--text);
-      border-color: rgba(255,255,255,0.25);
-    }
-    .lang-switch[open] summary {
-      color: var(--text);
-      border-color: rgba(255,255,255,0.25);
-    }
-    .lang-switch-menu {
-      position: absolute;
-      top: calc(100% + 0.5rem);
-      right: 0;
-      min-width: 160px;
-      background: rgba(13,18,32,0.98);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border2);
-      border-radius: 8px;
-      padding: 0.4rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.1rem;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    }
-    .lang-switch-menu a {
-      color: var(--muted);
-      text-decoration: none;
-      padding: 0.5rem 0.75rem;
-      border-radius: 5px;
-      font-size: 0.875rem;
-      transition: background 0.15s, color 0.15s;
-    }
-    .lang-switch-menu a:hover {
-      background: rgba(255,255,255,0.05);
-      color: var(--text);
-    }
-    .lang-switch-menu a[aria-current="page"] {
-      color: var(--cyan);
-      background: rgba(34,211,238,0.06);
-    }
-    @media (max-width: 640px) {
-      .lang-switch-menu { right: -0.5rem; min-width: 140px; }
-    }
 
     /* ── Hero ── */
     .hero {
@@ -485,15 +408,6 @@
     <a href="#providers">Providers</a>
     <a href="#install">Install</a>
     <a href="https://github.com/hzhongzhong/ai-spec" target="_blank">GitHub</a>
-    <details class="lang-switch">
-      <summary>🌐 EN</summary>
-      <div class="lang-switch-menu">
-        <a href="/" aria-current="page">English</a>
-        <a href="/zh/">简体中文</a>
-        <a href="/fr/">Français</a>
-        <a href="/ru/">Русский</a>
-      </div>
-    </details>
     <a href="https://www.npmjs.com/package/ai-spec-dev" target="_blank" class="nav-cta">npm install</a>
   </div>
 </nav>

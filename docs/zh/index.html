@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ai-spec — AI-Driven Development Orchestrator</title>
-  <meta name="description" content="From a single sentence to production-ready code. The complete AI-driven development pipeline with spec, DSL, codegen, review, and self-eval." />
+  <title>ai-spec — AI 驱动的开发流水线</title>
+  <meta name="description" content="一句话到生产可用代码。完整的 AI 驱动开发流水线：spec、DSL 契约、任务分层 codegen、3-pass 评审、自评分。" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://ai-spec.dev/" />
-  <meta property="og:title" content="ai-spec — One sentence → production-ready code" />
-  <meta property="og:description" content="AI-driven development orchestrator. 10-step pipeline: spec, DSL contract, task-layered codegen, 3-pass review, harness self-eval. Supports 9 AI providers." />
+  <meta property="og:url" content="https://ai-spec.dev/zh/" />
+  <meta property="og:title" content="ai-spec — 一句话 → 生产可用代码" />
+  <meta property="og:description" content="AI 驱动的开发流水线。10 步从需求到可审计代码：spec → DSL → 分层 codegen → 3-pass review → 自评分。支持 9 个 AI provider。" />
   <meta property="og:image" content="https://raw.githubusercontent.com/hzhongzhong/ai-spec/main/docs-assets/demo.gif" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="ai-spec — One sentence → production-ready code" />
-  <meta name="twitter:description" content="AI-driven development orchestrator. 10-step pipeline, 9 AI providers, 913+ tests." />
+  <meta name="twitter:title" content="ai-spec — 一句话 → 生产可用代码" />
+  <meta name="twitter:description" content="AI 驱动的开发流水线。10 步，9 个 provider，913+ 测试。" />
   <meta name="twitter:image" content="https://raw.githubusercontent.com/hzhongzhong/ai-spec/main/docs-assets/demo.gif" />
-  <link rel="canonical" href="https://ai-spec.dev/" />
+  <link rel="canonical" href="https://ai-spec.dev/zh/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
@@ -479,17 +479,17 @@
 <nav>
   <div class="nav-logo">ai-spec</div>
   <div class="nav-links">
-    <a href="#features">Features</a>
-    <a href="#pipeline">Pipeline</a>
-    <a href="#multirepo">Multi-Repo</a>
-    <a href="#providers">Providers</a>
-    <a href="#install">Install</a>
+    <a href="#features">特性</a>
+    <a href="#pipeline">流水线</a>
+    <a href="#multirepo">多仓库</a>
+    <a href="#providers">Provider</a>
+    <a href="#install">安装</a>
     <a href="https://github.com/hzhongzhong/ai-spec" target="_blank">GitHub</a>
     <details class="lang-switch">
-      <summary>🌐 EN</summary>
+      <summary>🌐 中</summary>
       <div class="lang-switch-menu">
-        <a href="/" aria-current="page">English</a>
-        <a href="/zh/">简体中文</a>
+        <a href="/">English</a>
+        <a href="/zh/" aria-current="page">简体中文</a>
         <a href="/fr/">Français</a>
         <a href="/ru/">Русский</a>
       </div>
@@ -503,28 +503,28 @@
   <div class="hero-glow"></div>
   <div class="hero-glow2"></div>
 
-  <div class="badge"><span class="badge-dot"></span> v0.60.0 · Now Available</div>
+  <div class="badge"><span class="badge-dot"></span> v0.60.0 · 现已可用</div>
 
   <h1>
-    One sentence.<br/>
-    <span class="grad-text">Production-ready code.</span>
+    一句话需求。<br/>
+    <span class="grad-text">生产可用代码。</span>
   </h1>
 
   <p class="hero-sub">
-    ai-spec is an AI-driven development orchestrator — from a single requirement to
-    fully reviewed, test-covered, spec-aligned code, in minutes.
+    ai-spec 是一个 AI 驱动的开发流水线 —— 从一句话需求到经过完整 review、
+    测试覆盖、spec 对齐的可审计代码，只要几分钟。
   </p>
 
   <div class="hero-buttons">
-    <a href="#install" class="btn-primary">Get Started →</a>
-    <a href="https://github.com/hzhongzhong/ai-spec" target="_blank" class="btn-secondary">View on GitHub</a>
+    <a href="#install" class="btn-primary">立即开始 →</a>
+    <a href="https://github.com/hzhongzhong/ai-spec" target="_blank" class="btn-secondary">查看 GitHub</a>
   </div>
 
   <div class="hero-stats">
-    <div class="stat"><div class="stat-num">9</div><div class="stat-label">AI Providers</div></div>
-    <div class="stat"><div class="stat-num">10</div><div class="stat-label">Pipeline Steps</div></div>
-    <div class="stat"><div class="stat-num">913+</div><div class="stat-label">Tests Passing</div></div>
-    <div class="stat"><div class="stat-num">25+</div><div class="stat-label">Core Modules</div></div>
+    <div class="stat"><div class="stat-num">9</div><div class="stat-label">AI Provider</div></div>
+    <div class="stat"><div class="stat-num">10</div><div class="stat-label">流水线步骤</div></div>
+    <div class="stat"><div class="stat-num">913+</div><div class="stat-label">通过测试</div></div>
+    <div class="stat"><div class="stat-num">25+</div><div class="stat-label">核心模块</div></div>
   </div>
 
   <div class="hero-demo fade-in">
@@ -536,40 +536,40 @@
 
 <!-- ── Problem ───────────────────────────────────────────────────────────────── -->
 <section id="problem" class="fade-in">
-  <div class="section-tag">The Problem</div>
-  <h2>Why existing AI tools<br/><span class="grad-text">aren't enough</span></h2>
-  <p class="section-sub">Every AI coding tool faces the same structural limitations. ai-spec is designed to address all of them.</p>
+  <div class="section-tag">问题所在</div>
+  <h2>为什么现有的 AI 工具<br/><span class="grad-text">还不够</span></h2>
+  <p class="section-sub">每一个 AI codegen 工具都撞到同样的结构性问题。ai-spec 是针对这些问题设计的。</p>
 
   <div class="problems-grid">
     <div class="problem-card">
       <div class="problem-icon">🧠</div>
-      <div class="problem-title">No Project Memory</div>
-      <div class="problem-desc">AI doesn't know your error codes, middleware setup, or i18n constraints. Every conversation starts from zero — like code from a new hire who's never seen your codebase.</div>
+      <div class="problem-title">没有项目记忆</div>
+      <div class="problem-desc">AI 不知道你的错误码、中间件配置、i18n 约定。每次对话都从零开始 —— 就像一个第一天入职、没看过你 codebase 的新员工写出来的代码。</div>
     </div>
     <div class="problem-card">
       <div class="problem-icon">🕳️</div>
-      <div class="problem-title">No Structured Middle Layer</div>
-      <div class="problem-desc">Natural language jumps directly to code. No reviewable, versionable contract in between. Misunderstandings are discovered in code — at high cost.</div>
+      <div class="problem-title">没有结构化中间层</div>
+      <div class="problem-desc">自然语言直接跳到代码。中间没有可审查、可版本化的契约。误解只能在代码里被发现 —— 代价极高。</div>
     </div>
     <div class="problem-card">
       <div class="problem-icon">💥</div>
-      <div class="problem-title">All-or-nothing Generation</div>
-      <div class="problem-desc">Generate a whole feature at once. One error fails everything. No checkpointing, no resume — failures restart from scratch.</div>
+      <div class="problem-title">全有或全无的生成</div>
+      <div class="problem-desc">一次性生成整个 feature。一个错就全失败。没有 checkpoint、没有 resume —— 失败就要从头再来。</div>
     </div>
     <div class="problem-card">
       <div class="problem-icon">🚪</div>
-      <div class="problem-title">Generate and Exit</div>
-      <div class="problem-desc">Did tests pass? Any lint errors? Architecture violations? You have to check everything manually after the tool exits.</div>
+      <div class="problem-title">生成完就退出</div>
+      <div class="problem-desc">测试过了吗？有 lint 错吗？架构违反了吗？工具退出之后，你得自己一个个手动确认。</div>
     </div>
     <div class="problem-card">
       <div class="problem-icon">📉</div>
-      <div class="problem-title">Experience Lost Every Time</div>
-      <div class="problem-desc">A security bug found in review? AI will repeat it next time. Team engineering knowledge can't systematically constrain AI behavior.</div>
+      <div class="problem-title">每次经验都丢失</div>
+      <div class="problem-desc">review 时发现一个安全 bug？下次 AI 还会再犯一遍。团队的工程经验没办法系统化地约束 AI 的行为。</div>
     </div>
     <div class="problem-card">
       <div class="problem-icon">👻</div>
-      <div class="problem-title">Cross-task Hallucinations</div>
-      <div class="problem-desc">Task B hallucinates function names from Task A — even though both files are in the same PR. Without a shared cache, AI guesses instead of reads.</div>
+      <div class="problem-title">跨任务幻觉</div>
+      <div class="problem-desc">任务 B 幻觉出任务 A 里根本不存在的函数名 —— 即使两个文件在同一个 PR 里。没有共享缓存，AI 是在猜，不是在读。</div>
     </div>
   </div>
 </section>
@@ -578,76 +578,76 @@
 
 <!-- ── Pipeline ──────────────────────────────────────────────────────────────── -->
 <section id="pipeline" class="fade-in">
-  <div class="section-tag">The Pipeline</div>
-  <h2>Every step, <span class="grad-text">orchestrated</span></h2>
-  <p class="section-sub">A fully automated 10-step pipeline from idea to reviewed, scored, production-ready code.</p>
+  <div class="section-tag">流水线</div>
+  <h2>每一步都是<span class="grad-text">编排好的</span></h2>
+  <p class="section-sub">一条全自动 10 步流水线，从一句话需求到经过 review、打过分、可审计的代码。</p>
 
   <div class="pipeline-flow">
-    <span class="pipe-step highlight">[1/10] Context</span>
+    <span class="pipe-step highlight">[1/10] 上下文</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step highlight">[2/10] Spec + Tasks</span>
+    <span class="pipe-step highlight">[2/10] Spec + 任务</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step highlight">[3/10] Refinement</span>
+    <span class="pipe-step highlight">[3/10] 精炼</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step">[3.4/10] Quality Gate</span>
+    <span class="pipe-step">[3.4/10] 质量门</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step">[Gate] Approval</span>
+    <span class="pipe-step">[Gate] 人审</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step highlight">[DSL] Contract</span>
+    <span class="pipe-step highlight">[DSL] 契约</span>
     <span class="pipe-arrow">→</span>
     <span class="pipe-step">[Git] Worktree</span>
     <span class="pipe-arrow">→</span>
     <span class="pipe-step highlight">[6/10] Codegen</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step">[7/10] Tests</span>
+    <span class="pipe-step">[7/10] 测试</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step">[8/10] Auto-fix</span>
+    <span class="pipe-step">[8/10] 自动修复</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step highlight">[9/10] 3-pass Review</span>
+    <span class="pipe-step highlight">[9/10] 3-pass 评审</span>
     <span class="pipe-arrow">→</span>
-    <span class="pipe-step highlight">[10/10] Harness Eval</span>
+    <span class="pipe-step highlight">[10/10] Harness 自评</span>
   </div>
 
   <div class="pipeline-cards">
     <div class="pipe-card">
       <div class="pipe-num">[1/10] CONTEXT LOAD</div>
-      <h3>Project-Aware from the Start</h3>
-      <p>Scans routes, schemas, dependencies, middleware, and the project constitution. Every prompt is grounded in your actual codebase — not a generic template.</p>
+      <h3>从一开始就理解你的项目</h3>
+      <p>扫描路由、schema、依赖、中间件和项目宪法。每一个 prompt 都基于你真实的 codebase —— 不是泛用模板。</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[2/10] SPEC + TASKS</div>
-      <h3>Structured Spec with Task Decomposition</h3>
-      <p>Generates a human-readable Markdown spec and decomposes it into ordered tasks: data → service → api → view → route → test. One AI call, complete output.</p>
+      <h3>结构化 Spec 配任务拆解</h3>
+      <p>生成人可读的 Markdown spec，并拆成有序任务：data → service → api → view → route → test。一次 AI 调用，完整输出。</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[3/10] REFINEMENT</div>
-      <h3>Interactive Polish with Diff Preview</h3>
-      <p>AI polishes the spec and shows a colored diff. You approve, reject, or request changes. Multiple rounds supported — no code is written until you say so.</p>
+      <h3>带 diff 预览的交互式精炼</h3>
+      <p>AI 精炼 spec 并显示彩色 diff。你可以批准、拒绝或要求修改。支持多轮 —— 你不点同意，没有任何代码会被写出来。</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[DSL] CONTRACT</div>
-      <h3>Machine-Readable Dual Contract</h3>
-      <p>Extracts a SpecDSL JSON — models, endpoints, behaviors — from the spec. Validated against 9 schema rules. The single source of truth for codegen, tests, and exports.</p>
+      <h3>机器可读的双层契约</h3>
+      <p>从 spec 中抽取 SpecDSL JSON —— 模型、endpoint、behaviors。经结构化校验。是 codegen / 测试 / 导出的单一事实来源。</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[6/10] CODEGEN</div>
-      <h3>Task-Layered Generation with File Cache</h3>
-      <p>Generates file-by-file in dependency order. Each completed file's exports are cached and injected into subsequent prompts — eliminating cross-task hallucinations.</p>
+      <h3>任务分层生成 + 文件缓存</h3>
+      <p>按依赖顺序逐文件生成。每个完成文件的 export 都会被缓存并注入到后续 prompt —— 消除跨任务幻觉。</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[8/10] AUTO-FIX</div>
-      <h3>Error Feedback Loop — Up to 3 Cycles</h3>
-      <p>Runs npm test / lint / tsc, parses errors by file, and sends targeted AI fixes with DSL context. Dependency-sorted repair order maximizes cycle efficiency.</p>
+      <h3>错误反馈循环 — 最多 3 轮</h3>
+      <p>跑 npm test / lint / tsc，按文件分组解析错误，带着 DSL 上下文丢给 AI 做精准修复。依赖排序的修复顺序最大化每轮的效率。</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[9/10] 3-PASS REVIEW</div>
-      <h3>Architecture + Implementation + Impact</h3>
-      <p>Pass 1: architecture & spec compliance. Pass 2: implementation correctness & edge cases. Pass 3: blast radius, complexity score, breaking change risk.</p>
+      <h3>架构 + 实现 + 影响范围</h3>
+      <p>Pass 1：架构 + spec 合规。Pass 2：实现正确性 + 边界条件。Pass 3：爆炸半径、复杂度评分、breaking change 风险。</p>
     </div>
     <div class="pipe-card">
       <div class="pipe-num">[10/10] HARNESS EVAL</div>
-      <h3>Automated Quality Score</h3>
-      <p>Scores on 4 dimensions: compliance (30%) + DSL coverage (25%) + compile (20%) + review (25%). Linked to prompt hash — tracks quality over time with zero AI calls.</p>
+      <h3>自动化质量分数</h3>
+      <p>4 维评分：compliance (30%) + DSL coverage (25%) + compile (20%) + review (25%)。和 prompt hash 绑定 —— 跨 run 跟踪质量趋势，零额外 AI 调用。</p>
     </div>
   </div>
 </section>
@@ -656,65 +656,65 @@
 
 <!-- ── Features ──────────────────────────────────────────────────────────────── -->
 <section id="features" class="fade-in">
-  <div class="section-tag">Core Features</div>
-  <h2>Everything you need to<br/><span class="grad-text">ship with confidence</span></h2>
-  <p class="section-sub">Every feature addresses a real pain point in AI-assisted development.</p>
+  <div class="section-tag">核心特性</div>
+  <h2>把 ai-spec 用稳<br/><span class="grad-text">所需要的一切</span></h2>
+  <p class="section-sub">每一个特性都对应 AI 辅助开发里的一个真实痛点。</p>
 
   <div class="features-grid">
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(34,211,238,0.1)">📜</div>
-      <h3>Project Constitution System</h3>
-      <p>Self-evolving knowledge base (§1–§9) that auto-injects into every prompt. Scans routes, middleware, schema, and conventions on init. Grows smarter with every review via §9 lesson accumulation.</p>
+      <h3>项目宪法系统</h3>
+      <p>自演化的知识库（§1–§9），自动注入到每个 prompt。init 时扫描路由、中间件、schema 和约定。每次 review 后通过 §9 累积 lesson，越来越聪明。</p>
       <span class="feature-tag" style="background:rgba(34,211,238,0.08);color:var(--cyan)">ai-spec init</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(59,130,246,0.1)">🎯</div>
-      <h3>Dual-Layer Contract</h3>
-      <p>Human-readable Markdown Spec for engineers to review and align on. Machine-readable SpecDSL JSON for tools to consume. Both versioned, both auditable. Codegen, tests, and exports all share one contract.</p>
+      <h3>双层契约</h3>
+      <p>人可读的 Markdown Spec 给工程师 review 和对齐用。机器可读的 SpecDSL JSON 给工具消费。两份都有版本、都可审计。codegen / 测试 / 导出共享同一份契约。</p>
       <span class="feature-tag" style="background:rgba(59,130,246,0.08);color:var(--blue)">Spec + DSL</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(34,197,94,0.1)">🔄</div>
-      <h3>Dual Feedback Loops</h3>
-      <p>DSL Gap Loop: detects sparse contracts before codegen and triggers targeted spec enrichment. Review→DSL Loop: structural review issues feed back into the contract — so the next run starts cleaner.</p>
-      <span class="feature-tag" style="background:rgba(34,197,94,0.08);color:var(--green)">Self-correcting</span>
+      <h3>双反馈循环</h3>
+      <p>DSL Gap Loop：在 codegen 前检测稀疏契约，触发针对性的 spec 补全。Review→DSL Loop：结构性的 review 问题反馈到契约里 —— 下次 run 起点更干净。</p>
+      <span class="feature-tag" style="background:rgba(34,197,94,0.08);color:var(--green)">自纠错</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(250,204,21,0.1)">⚡</div>
-      <h3>VCR Record & Replay</h3>
-      <p>Record real AI responses on first run. Replay them deterministically in subsequent runs — zero API calls, zero cost. Iterate on pipeline logic and UI without burning tokens.</p>
+      <h3>VCR 录制 & 重放</h3>
+      <p>第一次 run 时录下真实的 AI 响应。后续 run 确定性重放 —— 零 API 调用、零成本。迭代流水线逻辑和 UI 不烧 token。</p>
       <span class="feature-tag" style="background:rgba(250,204,21,0.08);color:var(--yellow)">ai-spec create --vcr-record</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(139,92,246,0.1)">🛡️</div>
-      <h3>Approval Gate</h3>
-      <p>Human review happens at the right moment: after the spec is clear and the DSL is valid, but before any code is written. Abort means zero disk residue. Proceed means every step has a verified contract to follow.</p>
+      <h3>人审门</h3>
+      <p>人审发生在正确的时机：spec 已清晰、DSL 已通过验证，但还没有任何代码被写出来。abort = 零磁盘残留。继续 = 每一步都有经过验证的契约可循。</p>
       <span class="feature-tag" style="background:rgba(139,92,246,0.08);color:var(--violet)">[Gate] checkpoint</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(248,113,113,0.1)">🔁</div>
-      <h3>Fix-History Self-Learning</h3>
-      <p>Every successful import fix is appended to a ledger. On the next codegen run, a "DO NOT REPEAT" section is automatically injected into prompts — preventing the same hallucination from ever reoccurring.</p>
-      <span class="feature-tag" style="background:rgba(248,113,113,0.08);color:var(--red)">v0.54+ zero-cost learning</span>
+      <h3>Fix-History 自学习</h3>
+      <p>每一次成功的 import 修复都会追加到 ledger。下一次 codegen 时，"DO NOT REPEAT" 段落自动注入到 prompt —— 让同样的幻觉不会重复出现。</p>
+      <span class="feature-tag" style="background:rgba(248,113,113,0.08);color:var(--red)">v0.54+ 零成本学习</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(34,211,238,0.1)">↩️</div>
-      <h3>Instant Rollback</h3>
-      <p>Every run gets a unique RunId. Before any file is written, the original content is snapshotted. One command restores your entire repo to pre-run state — precise to the file, precise to the run.</p>
+      <h3>即时回滚</h3>
+      <p>每个 run 都有唯一的 RunId。在任何文件被写之前，原始内容都会被快照。一条命令把整个 repo 恢复到 run 之前的状态 —— 精确到文件、精确到 run。</p>
       <span class="feature-tag" style="background:rgba(34,211,238,0.08);color:var(--cyan)">ai-spec restore &lt;runId&gt;</span>
     </div>
 
     <div class="feature-card">
       <div class="feature-icon" style="background:rgba(34,197,94,0.1)">🌐</div>
-      <h3>9 AI Providers</h3>
-      <p>Gemini, Claude, OpenAI, DeepSeek, Qwen, GLM, MiniMax, Doubao, MiMo. Mix and match: use one model for spec generation, another for codegen. Per-run provider override supported.</p>
+      <h3>9 个 AI Provider</h3>
+      <p>Gemini、Claude、OpenAI、DeepSeek、Qwen、GLM、MiniMax、Doubao、MiMo。分步骤混搭：spec 生成用一个模型，codegen 用另一个。支持 per-run provider 覆盖。</p>
       <span class="feature-tag" style="background:rgba(34,197,94,0.08);color:var(--green)">--provider --codegen-provider</span>
     </div>
 
@@ -726,38 +726,38 @@
 <!-- ── Multi-Repo ─────────────────────────────────────────────────────────────── -->
 <section id="multirepo" class="fade-in" style="padding:5rem 2rem">
   <div class="multirepo-section">
-    <div class="section-tag">Multi-Repo Workspace</div>
-    <h2>Full-stack in<br/><span class="grad-text">one command</span></h2>
-    <p class="section-sub">The only pipeline that wires your backend and frontend together — automatically.</p>
+    <div class="section-tag">多仓库 Workspace</div>
+    <h2>一条命令<br/><span class="grad-text">跑通全栈</span></h2>
+    <p class="section-sub">唯一一条把你的后端和前端自动串起来的流水线。</p>
 
     <div class="multirepo-diagram">
       <div class="repo-box">
-        <div class="repo-title">🖥️ Backend — node-express</div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">[W2] Spec + DSL generated</span></div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">Models, endpoints, behaviors extracted</span></div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">Code generated + reviewed</span></div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--green)"></span><span class="repo-step-text">DSL contract ready for handoff →</span></div>
+        <div class="repo-title">🖥️ 后端 — node-express</div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">[W2] Spec + DSL 已生成</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">模型、endpoint、behaviors 已抽取</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--cyan)"></span><span class="repo-step-text">代码已生成 + 已 review</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--green)"></span><span class="repo-step-text">DSL 契约准备好，移交给前端 →</span></div>
       </div>
 
       <div class="contract-box">
         <div class="contract-arrow">⬇</div>
-        <div class="contract-badge">DSL Contract<br/>5 endpoints<br/>3 models</div>
+        <div class="contract-badge">DSL 契约<br/>5 endpoint<br/>3 model</div>
         <div class="contract-arrow">⬇</div>
-        <div style="font-size:0.72rem;color:var(--muted);text-align:center">injected into<br/>frontend pipeline</div>
+        <div style="font-size:0.72rem;color:var(--muted);text-align:center">注入到<br/>前端流水线</div>
       </div>
 
       <div class="repo-box">
-        <div class="repo-title">🖼️ Frontend — vue / react</div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">[W4] Spec generated with backend contract</span></div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">HTTP client calls pre-aligned to DSL</span></div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">Code generated + reviewed</span></div>
-        <div class="repo-step"><span class="repo-step-dot" style="background:var(--green)"></span><span class="repo-step-text">[W5] Cross-stack verifier: 0 phantoms ✔</span></div>
+        <div class="repo-title">🖼️ 前端 — vue / react</div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">[W4] Spec 生成（带后端契约）</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">HTTP client 调用预先对齐 DSL</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--violet)"></span><span class="repo-step-text">代码已生成 + 已 review</span></div>
+        <div class="repo-step"><span class="repo-step-dot" style="background:var(--green)"></span><span class="repo-step-text">[W5] 跨栈 verifier：0 phantom ✔</span></div>
       </div>
     </div>
 
     <div style="margin-top:2.5rem;padding:1.5rem;background:rgba(34,211,238,0.04);border:1px solid rgba(34,211,238,0.12);border-radius:10px;">
-      <div style="font-size:0.8rem;font-weight:600;color:var(--cyan);margin-bottom:0.75rem">✔ Cross-Stack Contract Verification (v0.50+)</div>
-      <p style="font-size:0.84rem;color:var(--muted)">After frontend generation, the cross-stack verifier scans every API call in the frontend code and checks it against the backend DSL. Phantom routes (hallucinated endpoints), method mismatches, and string-concatenated paths are all detected and reported before you push.</p>
+      <div style="font-size:0.8rem;font-weight:600;color:var(--cyan);margin-bottom:0.75rem">✔ 跨栈契约校验 (v0.50+)</div>
+      <p style="font-size:0.84rem;color:var(--muted)">前端 codegen 完成后，跨栈 verifier 会扫描前端代码里的每一个 API 调用，对照后端 DSL 进行校验。phantom 路由（幻觉出来的 endpoint）、HTTP method 不匹配、字符串拼接的路径，都会在你 push 之前被检出并报告。</p>
     </div>
   </div>
 </section>
@@ -766,25 +766,25 @@
 
 <!-- ── DSL Artifacts ──────────────────────────────────────────────────────────── -->
 <section id="artifacts" class="fade-in">
-  <div class="section-tag">DSL-Derived Artifacts</div>
-  <h2>One contract,<br/><span class="grad-text">many outputs</span></h2>
-  <p class="section-sub">The SpecDSL isn't just for codegen — it powers your entire development workflow.</p>
+  <div class="section-tag">DSL 衍生物</div>
+  <h2>一份契约，<br/><span class="grad-text">多种产物</span></h2>
+  <p class="section-sub">SpecDSL 不只为 codegen 服务 —— 它驱动你完整的开发工作流。</p>
 
   <div class="artifacts-grid">
     <div class="artifact-card">
       <div class="artifact-cmd">ai-spec export</div>
-      <h3>OpenAPI 3.1.0 Export</h3>
-      <p>DSL → production-ready YAML or JSON. Plug directly into Postman, Swagger UI, or any SDK generator.</p>
+      <h3>OpenAPI 3.1.0 导出</h3>
+      <p>DSL → 生产可用的 YAML / JSON。直接接入 Postman、Swagger UI 或任意 SDK 生成器。</p>
       <div class="artifact-outputs">
         <div class="artifact-output">openapi.yaml (3.1.0)</div>
-        <div class="artifact-output">Paths, schemas, parameters, responses</div>
+        <div class="artifact-output">paths / schemas / parameters / responses</div>
         <div class="artifact-output">--format json · --server &lt;url&gt;</div>
       </div>
     </div>
     <div class="artifact-card">
       <div class="artifact-cmd">ai-spec mock</div>
-      <h3>Instant Mock Server</h3>
-      <p>DSL → Express mock server + MSW handlers + Vite proxy config. Frontend development without waiting for the backend.</p>
+      <h3>即时 Mock Server</h3>
+      <p>DSL → Express mock server + MSW handlers + Vite 代理配置。前端开发不用等后端。</p>
       <div class="artifact-outputs">
         <div class="artifact-output">mock/server.js (Express)</div>
         <div class="artifact-output">mock/handlers.ts (MSW)</div>
@@ -793,22 +793,22 @@
     </div>
     <div class="artifact-card">
       <div class="artifact-cmd">ai-spec types</div>
-      <h3>TypeScript Types</h3>
-      <p>DSL → typed interfaces, request/response types, and API endpoint constants. Shared across frontend and backend.</p>
+      <h3>TypeScript 类型</h3>
+      <p>DSL → 类型化 interface、请求/响应类型、API endpoint 常量。前后端共享。</p>
       <div class="artifact-outputs">
         <div class="artifact-output">export interface Model {}</div>
         <div class="artifact-output">export const API_ENDPOINTS</div>
-        <div class="artifact-output">Request & Response types</div>
+        <div class="artifact-output">Request & Response 类型</div>
       </div>
     </div>
     <div class="artifact-card">
       <div class="artifact-cmd">ai-spec dashboard</div>
-      <h3>Harness Dashboard</h3>
-      <p>Generate a static HTML quality dashboard. Track harness scores, compliance rates, and review trends across all runs.</p>
+      <h3>Harness 仪表盘</h3>
+      <p>生成静态 HTML 质量看板。跨所有 run 跟踪 harness 分数、合规率和评审趋势。</p>
       <div class="artifact-outputs">
-        <div class="artifact-output">Static HTML, no server needed</div>
-        <div class="artifact-output">Score trend charts</div>
-        <div class="artifact-output">Per-run stage breakdown</div>
+        <div class="artifact-output">静态 HTML，无需服务器</div>
+        <div class="artifact-output">分数趋势图</div>
+        <div class="artifact-output">每个 run 的阶段拆解</div>
       </div>
     </div>
   </div>
@@ -820,31 +820,31 @@
 <section id="code" class="fade-in">
   <div class="code-section">
     <div>
-      <div class="section-tag">Live Output</div>
-      <h2>What the pipeline<br/><span class="grad-text">actually outputs</span></h2>
+      <div class="section-tag">实际输出</div>
+      <h2>流水线<br/><span class="grad-text">真实跑出来的样子</span></h2>
       <p style="color:var(--muted);font-size:0.95rem;line-height:1.7;margin-top:1rem">
-        Every step is visible, every decision is auditable.
-        No black box — you see exactly what's happening,
-        what scored how, and what was fixed automatically.
+        每一步都可见，每一个决策都可审计。
+        没有黑盒 —— 你能看到正在发生什么、
+        哪一项打了多少分、哪一处被自动修复了。
       </p>
       <div style="margin-top:2rem;display:flex;flex-direction:column;gap:0.75rem">
         <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
-          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Spec quality assessment with per-dimension scores</span>
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Spec 质量评估（按维度逐项打分）</span>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
-          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">DSL extraction with validation summary</span>
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">DSL 抽取 + 校验摘要</span>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
-          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Per-file codegen with layer labels</span>
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">逐文件 codegen，标注 layer</span>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
-          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Error auto-fix with cycle count</span>
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">错误自动修复 + 循环计数</span>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
-          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">3-pass review with per-pass verdicts</span>
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">3-pass 评审 + 每个 pass 的结论</span>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
-          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">Final harness score breakdown (4 dimensions)</span>
+          <span style="color:var(--green)">✔</span><span style="color:var(--muted)">最终 harness 分数拆解（4 个维度）</span>
         </div>
       </div>
     </div>
@@ -901,14 +901,14 @@
 
 <!-- ── Observability ──────────────────────────────────────────────────────────── -->
 <section id="observability" class="fade-in">
-  <div class="section-tag">Observability</div>
-  <h2>Quality you can<br/><span class="grad-text">measure and track</span></h2>
-  <p class="section-sub">ai-spec turns code generation quality into data — comparable, trackable, and improvable over time.</p>
+  <div class="section-tag">可观测性</div>
+  <h2>质量是<br/><span class="grad-text">可量化、可追踪的</span></h2>
+  <p class="section-sub">ai-spec 把代码生成质量变成数据 —— 可比较、可追踪、可在时间里改进。</p>
 
   <div class="obs-grid">
     <div class="obs-card">
-      <h3>Harness Score Trend</h3>
-      <p>Track quality across all runs. See if your pipeline is improving.</p>
+      <h3>Harness 分数趋势</h3>
+      <p>跨所有 run 跟踪质量。看你的流水线在变好还是在变差。</p>
       <div class="score-bar"><span class="score-label">Run 1</span><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div><span class="score-val">70</span></div>
       <div class="score-bar"><span class="score-label">Run 2</span><div class="bar-track"><div class="bar-fill" style="width:74%"></div></div><span class="score-val">74</span></div>
       <div class="score-bar"><span class="score-label">Run 3</span><div class="bar-track"><div class="bar-fill" style="width:82%"></div></div><span class="score-val">82</span></div>
@@ -917,8 +917,8 @@
     </div>
 
     <div class="obs-card">
-      <h3>Per-Run Stage Logs</h3>
-      <p>Every stage is timed and logged to <code style="font-family:monospace;font-size:0.8em;color:var(--cyan)">.ai-spec-logs/&lt;runId&gt;.json</code>.</p>
+      <h3>每个 Run 的阶段日志</h3>
+      <p>每个阶段都计时并记录到 <code style="font-family:monospace;font-size:0.8em;color:var(--cyan)">.ai-spec-logs/&lt;runId&gt;.json</code>。</p>
       <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted);margin-top:1rem;line-height:2">
         <div><span style="color:var(--cyan)">context_load</span>   312ms</div>
         <div><span style="color:var(--cyan)">spec_gen</span>       18.4s</div>
@@ -931,27 +931,27 @@
     </div>
 
     <div class="obs-card">
-      <h3>4-Dimension Scoring</h3>
-      <p>The harness score is deterministic — no AI calls after generation completes.</p>
+      <h3>4 维评分</h3>
+      <p>harness 分数是确定性的 —— 生成完成后不再调用 AI。</p>
       <div style="margin-top:1rem;display:flex;flex-direction:column;gap:0.75rem">
         <div style="display:flex;justify-content:space-between;font-size:0.82rem">
-          <span style="color:var(--muted)">Compliance</span><span style="color:var(--cyan);font-weight:600">30%</span>
+          <span style="color:var(--muted)">Compliance（合规）</span><span style="color:var(--cyan);font-weight:600">30%</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:0.82rem">
-          <span style="color:var(--muted)">DSL Coverage</span><span style="color:var(--cyan);font-weight:600">25%</span>
+          <span style="color:var(--muted)">DSL 覆盖率</span><span style="color:var(--cyan);font-weight:600">25%</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:0.82rem">
-          <span style="color:var(--muted)">Compile Pass</span><span style="color:var(--cyan);font-weight:600">20%</span>
+          <span style="color:var(--muted)">编译通过</span><span style="color:var(--cyan);font-weight:600">20%</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:0.82rem">
-          <span style="color:var(--muted)">Review Score</span><span style="color:var(--cyan);font-weight:600">25%</span>
+          <span style="color:var(--muted)">Review 分数</span><span style="color:var(--cyan);font-weight:600">25%</span>
         </div>
       </div>
     </div>
 
     <div class="obs-card">
-      <h3>Instant Rollback</h3>
-      <p>Don't like the result? One command restores all modified files to their pre-run state.</p>
+      <h3>即时回滚</h3>
+      <p>对结果不满意？一条命令把所有被改过的文件恢复到 run 之前的状态。</p>
       <div style="margin-top:1rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:0.78rem">
         <div style="color:var(--cyan)">$ ai-spec restore 20260409-a7f2</div>
         <div style="color:var(--muted);margin-top:0.5rem">↩ src/api/task.ts</div>
@@ -967,9 +967,9 @@
 
 <!-- ── Providers ──────────────────────────────────────────────────────────────── -->
 <section id="providers" class="fade-in">
-  <div class="section-tag">AI Providers</div>
-  <h2>9 providers,<br/><span class="grad-text">your choice</span></h2>
-  <p class="section-sub">Use any combination of providers. Mix a reasoning model for spec generation with a fast model for codegen.</p>
+  <div class="section-tag">AI Provider</div>
+  <h2>9 个 provider，<br/><span class="grad-text">任你选</span></h2>
+  <p class="section-sub">任意组合 provider。spec 生成用一个推理强的模型，codegen 换一个快的。</p>
 
   <div class="marquee-wrapper">
     <div class="marquee-track" id="marquee-track">
@@ -1187,14 +1187,14 @@
 <section id="install" class="fade-in" style="max-width:1200px;margin:0 auto">
   <div class="install-section">
     <div class="install-box">
-      <div class="section-tag" style="justify-content:center;display:flex">Quick Start</div>
-      <h2>Ready in <span class="grad-text">60 seconds</span></h2>
-      <p style="color:var(--muted);margin-top:0.75rem">Install globally, set your API key, register a repo, and start shipping.</p>
+      <div class="section-tag" style="justify-content:center;display:flex">快速开始</div>
+      <h2>60 秒<span class="grad-text">就绪</span></h2>
+      <p style="color:var(--muted);margin-top:0.75rem">全局安装、设置 API key、注册仓库，开始 ship。</p>
 
       <div class="install-code">
         <div class="install-line">
           <span class="prompt">#</span>
-          <span style="color:var(--muted)">Install globally</span>
+          <span style="color:var(--muted)">全局安装</span>
         </div>
         <div class="install-line">
           <span class="prompt">$</span>
@@ -1203,7 +1203,7 @@
         <br/>
         <div class="install-line">
           <span class="prompt">#</span>
-          <span style="color:var(--muted)">Set your API key (any provider)</span>
+          <span style="color:var(--muted)">设置 API key（任一 provider）</span>
         </div>
         <div class="install-line">
           <span class="prompt">$</span>
@@ -1212,7 +1212,7 @@
         <br/>
         <div class="install-line">
           <span class="prompt">#</span>
-          <span style="color:var(--muted)">Register your repo + generate constitution</span>
+          <span style="color:var(--muted)">注册仓库 + 生成项目宪法</span>
         </div>
         <div class="install-line">
           <span class="prompt">$</span>
@@ -1221,17 +1221,17 @@
         <br/>
         <div class="install-line">
           <span class="prompt">#</span>
-          <span style="color:var(--muted)">Start developing</span>
+          <span style="color:var(--muted)">开始开发</span>
         </div>
         <div class="install-line">
           <span class="prompt">$</span>
-          <span style="color:var(--text)">ai-spec create <span style="color:var(--cyan)">"Add user authentication to my app"</span></span>
+          <span style="color:var(--text)">ai-spec create <span style="color:var(--cyan)">"给我的 app 加用户登录"</span></span>
         </div>
       </div>
 
       <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
-        <a href="https://www.npmjs.com/package/ai-spec-dev" target="_blank" class="btn-primary">View on npm →</a>
-        <a href="https://github.com/hzhongzhong/ai-spec" target="_blank" class="btn-secondary">GitHub Repo</a>
+        <a href="https://www.npmjs.com/package/ai-spec-dev" target="_blank" class="btn-primary">前往 npm →</a>
+        <a href="https://github.com/hzhongzhong/ai-spec" target="_blank" class="btn-secondary">GitHub 仓库</a>
       </div>
     </div>
   </div>
@@ -1244,10 +1244,10 @@
   <div class="footer-links">
     <a href="https://github.com/hzhongzhong/ai-spec" target="_blank">GitHub</a>
     <a href="https://www.npmjs.com/package/ai-spec-dev" target="_blank">npm</a>
-    <a href="#pipeline">Pipeline</a>
-    <a href="#features">Features</a>
+    <a href="#pipeline">流水线</a>
+    <a href="#features">特性</a>
   </div>
-  <div class="footer-copy">MIT License · Built with AI, for AI-driven development.</div>
+  <div class="footer-copy">MIT 许可证 · 用 AI 构建，为 AI 驱动开发而生。</div>
 </footer>
 
 <script>
